@@ -11,115 +11,171 @@
 </head>
 <body>
 
-  <div class="layui-form" lay-filter="layuiadmin-form-role" id="layuiadmin-form-role" style="padding: 20px 30px 0 0;">
+  <form class="layui-form" lay-filter="card-generate-form" id="card-generate-form" style="padding: 20px 30px 0 0;">
     <div class="layui-form-item">
-      <label class="layui-form-label">选择卡种</label>
+      <label class="layui-form-label">选择卡类型</label>
       <div class="layui-input-block">
-        <select id="k_kz" name="k_kz" lay-filter="LAY-user-k_kz-type" lay-search></select>
-      </div>
-    </div>
-    <div class="layui-form-item">
-      <label class="layui-form-label">选择软件</label>
-      <div class="layui-input-block">
-        <select id="k_ssrj" name="k_ssrj" lay-search>
-          <option value="">需要选择软件</option>
+        <select id="card-type" name="card_type" lay-verify="required" lay-search>
+          <option value="">请选择卡类型</option>
         </select>
       </div>
     </div>
     <div class="layui-form-item">
       <label class="layui-form-label">生成数量</label>
       <div class="layui-input-block">
-        <input type="text" name="k_zksl" lay-verify="number" placeholder="必填" autocomplete="off" class="layui-input">
+        <input type="number" name="count" id="card-count" lay-verify="required|number" placeholder="请输入生成数量" min="1" max="1000" autocomplete="off" class="layui-input">
       </div>
     </div>
     <div class="layui-form-item">
       <label class="layui-form-label">卡密备注</label>
       <div class="layui-input-block">
-        <input type="text" name="k_bzxx" placeholder="选填" autocomplete="off" class="layui-input">
+        <input type="text" name="remarks" id="card-remarks" placeholder="请输入备注（可选）" autocomplete="off" class="layui-input">
       </div>
     </div>
-    <div class="layui-form-item">
-      <label class="layui-form-label">卡密内容</label>
-      <div class="layui-input-block">
-        <textarea type="text" id="k_data" name="k_data" autocomplete="off" class="layui-textarea" style="height:300px;"></textarea>
-      </div>
-    </div>
+    <!-- 隐藏的提交按钮，供父页面调用 -->
     <div class="layui-form-item layui-hide">
       <button class="layui-btn" lay-submit lay-filter="LAY-user-front-submit" id="LAY-user-back-submit">提交</button>
     </div>
-  </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">生成结果</label>
+      <div class="layui-input-block">
+        <textarea id="card-result" name="card_result" placeholder="点击生成卡密按钮后，生成的卡密将显示在这里..." readonly autocomplete="off" class="layui-textarea" style="height:300px;"></textarea>
+      </div>
+    </div>
+  </form>
   
   <script src="../../res/layui/layui.js"></script>
   <script>
   layui.config({
     base: '../../res/' //静态资源所在路径
-  }).use(['index', 'form'], function(){
+  }).use(['index', 'form', 'software'], function(){
     var $ = layui.$
-    ,form = layui.form ;
-    
-    $.ajax({
-        type:'GET',
-        url:'ManSoftType_sbm_Data.aspx',
-        dataType: 'json',
-        cache: false,
-        async: false,
-        success: function (data) {
-            $.each(data,function(index,item){
-                $('#k_ssrj').append(new Option(item.r_mc,item.r_sbm));
-                })
-                form.render();
-            }
-	});
-    
-    $.ajax({
-        type:'GET',
-        url:'ManCardType_ky_Data.aspx',
-        dataType: 'json',
-        cache: false,
-        success: function (data) {
-            $.each(data,function(index,item){
-                $('#k_kz').append(new Option(item.a_klmc,item.a_id));
-                })
-            form.render();
-            $.ajax({
-            type:'GET',
-            url:'ManCardType_kzidTosbm_Data.aspx?id=' + $('#k_kz').val(),
-            dataType: 'json',
-            cache: false,
-            success: function (data) {
-                if(data.code==4){
-                   $('#k_ssrj').val('');
-                   $('#k_ssrj').attr("disabled",false);
-                }else{
-                   $('#k_ssrj').val(data.msg);
-                   $('#k_ssrj').attr("disabled",true);
-                }
-                form.render();
-                }
-            });
-            }
-	});
-    
-    //监听选择软件
-    form.on('select(LAY-user-k_kz-type)', function(data){
+    ,form = layui.form
+    ,software = layui.software
+    ,layer = layui.layer;
+
+    // 获取当前选择的软件
+    var currentSoftware = software.getCurrentSoftware();
+
+    // 加载卡类型数据
+    function loadCardTypes() {
         $.ajax({
-            type:'GET',
-            url:'ManCardType_kzidTosbm_Data.aspx?id=' + data.value,
-            dataType: 'json',
-            cache: false,
-            success: function (data) {
-                if(data.code==4){
-                   $('#k_ssrj').val('');
-                   $('#k_ssrj').attr("disabled",false);
-                }else{
-                   $('#k_ssrj').val(data.msg);
-                   $('#k_ssrj').attr("disabled",true);
+            type: 'POST',
+            url: '/api/cardtype/getCardTypeList',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                software: currentSoftware || '默认软件'
+            }),
+            success: function (res) {
+                console.log('卡类型API响应:', res);
+                if (res.code === 0 && res.data && res.data.data) {
+                    $('#card-type').empty().append('<option value="">请选择卡类型</option>');
+                    if (res.data.data.length === 0) {
+                        layer.msg('当前软件位没有可用的卡类型', {icon: 0});
+                    } else {
+                        $.each(res.data.data, function(index, item) {
+                            $('#card-type').append(new Option(item.name + ' - ' + item.price.toFixed(2) + '元', item.name));
+                        });
+                    }
+                    form.render();
+                } else {
+                    console.error('卡类型加载失败:', res);
+                    layer.msg('加载卡类型失败: ' + (res.message || '未知错误'), {icon: 2});
                 }
-                form.render();
-                }
+            },
+            error: function() {
+                layer.msg('加载卡类型失败: 网络错误', {icon: 2});
+            }
         });
+    }
+
+    // 页面加载时获取卡类型列表
+    loadCardTypes();
+
+    // 生成卡密功能 - 供父页面调用
+    form.on('submit(LAY-user-front-submit)', function(data) {
+        var field = data.field;
+        console.log('表单数据:', field);
+
+        // 手动获取表单字段值进行调试
+        var cardType = $('#card-type').val();
+        var count = $('#card-count').val();
+        var remarks = $('#card-remarks').val();
+        console.log('手动获取的值:', {
+            card_type: cardType,
+            count: count,
+            remarks: remarks
+        });
+
+        // 如果data.field为空，使用手动获取的值
+        if (!field || Object.keys(field).length === 0) {
+            field = {
+                card_type: cardType,
+                count: count,
+                remarks: remarks
+            };
+            console.log('使用手动获取的表单数据:', field);
+        }
+
+        // 验证必填字段
+        if (!field.card_type) {
+            console.log('卡类型验证失败:', field.card_type);
+            layer.msg('请选择卡类型', {icon: 2});
+            return false;
+        }
+        if (!field.count || field.count <= 0) {
+            layer.msg('请输入有效的生成数量', {icon: 2});
+            return false;
+        }
+
+        // 显示加载状态
+        var loadIndex = layer.load(2, {content: '正在生成卡密...'});
+
+        // 构建请求数据
+        var requestData = {
+            software: currentSoftware || '默认软件',
+            card_type: field.card_type,
+            count: parseInt(field.count),
+            remarks: field.remarks || ''
+        };
+
+        // 发送POST请求到后端
+        $.ajax({
+            type: 'POST',
+            url: '/api/card/generateCards',
+            contentType: 'application/json',
+            data: JSON.stringify(requestData),
+            success: function(res) {
+                layer.close(loadIndex);
+                if (res.code === 0 && res.data && res.data.cards) {
+                    // 显示生成的卡密
+                    var cardList = res.data.cards || [];
+                    var cardText = cardList.join('\n');
+                    $('#card-result').val(cardText);
+
+                    var costInfo = '';
+                    if (res.data.total_cost && res.data.unit_price) {
+                        costInfo = '，共扣费 ' + res.data.total_cost.toFixed(2) + ' 元';
+                    }
+                    layer.msg('成功生成 ' + res.data.count + ' 张卡密' + costInfo, {icon: 1});
+
+                    // 通知父页面刷新表格
+                    if (parent.layui && parent.layui.table) {
+                        parent.layui.table.reload('test-table-index');
+                    }
+                } else {
+                    layer.msg('生成卡密失败: ' + (res.message || '未知错误'), {icon: 2});
+                }
+            },
+            error: function() {
+                layer.close(loadIndex);
+                layer.msg('生成卡密失败: 网络错误', {icon: 2});
+            }
+        });
+
+        return false; // 阻止表单默认提交
     });
-   
+
   });
   </script>
 </body>

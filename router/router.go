@@ -35,7 +35,7 @@ func SetupNewRouter(dbManager *database.DatabaseManager) *gin.Engine {
 	authHandler := handler.NewAuthHandler(authService)
 	agentHandler := handler.NewAgentHandler(agentService)
 	softwareHandler := handler.NewSoftwareHandler(softwareService)
-	cardHandler := handler.NewCardHandler(cardService)
+	cardHandler := handler.NewCardHandler(cardService, cardTypeService)
 	cardTypeHandler := handler.NewCardTypeHandler(cardTypeService)
 
 	// 设置API路由 - RPC风格
@@ -87,6 +87,7 @@ func SetupNewRouter(dbManager *database.DatabaseManager) *gin.Engine {
 			cardGroup.POST("/enableCard", cardHandler.EnableCard)
 			cardGroup.POST("/disableCard", cardHandler.DisableCard)
 			cardGroup.POST("/enableCardWithBanTimeReturn", cardHandler.EnableCardWithBanTimeReturn)
+			cardGroup.POST("/generateCards", cardHandler.GenerateCards)
 
 		}
 

@@ -3,7 +3,9 @@ package services
 import (
 	"SProtectAgentWeb/database"
 	"SProtectAgentWeb/models"
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -221,4 +223,129 @@ func (s *CardService) GetCardList(params *CardQueryParams) ([]models.CardInfo, i
 	}
 
 	return results, total, nil
+}
+
+// GenerateCards 生成卡密
+func (s *CardService) GenerateCards(software, cardTypeName, creator string, count int, remarks string) ([]string, error) {
+	// 获取软件位数据库连接
+	db, err := s.dbManager.GetSoftwareDB(software)
+	if err != nil {
+		return nil, fmt.Errorf("获取数据库连接失败: %v", err)
+	}
+
+	// 获取卡类型信息
+	var cardTypeInfo models.CardType
+	if err := db.Where("Name = ?", cardTypeName).First(&cardTypeInfo).Error; err != nil {
+		return nil, fmt.Errorf("卡类型不存在: %v", err)
+	}
+
+	// 获取代理信息
+	var agent models.Agent
+	if err := db.Where("User = ? AND Deltm = 0", creator).First(&agent).Error; err != nil {
+		return nil, fmt.Errorf("获取代理信息失败: %v", err)
+	}
+
+	// 计算经过利率计算后的实际价格
+	actualPrice := cardTypeInfo.CalculatePrice(agent.TatalParities)
+	totalCost := actualPrice * float64(count)
+
+	// 检查代理余额是否足够
+	if agent.AccountBalance < totalCost {
+		return nil, fmt.Errorf("余额不足，需要 %.2f 元，当前余额 %.2f 元", totalCost, agent.AccountBalance)
+	}
+
+	// 使用事务确保操作的原子性
+	var generatedCards []string
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// 1. 扣除代理余额
+		if err := tx.Model(&models.Agent{}).
+			Where("User = ?", creator).
+			Update("AccountBalance", agent.AccountBalance-totalCost).Error; err != nil {
+			return fmt.Errorf("扣除代理余额失败: %v", err)
+		}
+
+		// 2. 生成卡密列表
+		var cardInfos []models.CardInfo
+		currentTime := time.Now().Unix()
+
+		for i := 0; i < count; i++ {
+			// 生成卡密（前缀 + 32位十六进制）
+			cardKey, err := s.generateCardKey(cardTypeInfo.Prefix)
+			if err != nil {
+				return fmt.Errorf("生成卡密失败: %v", err)
+			}
+
+			// 检查卡密是否已存在
+			var existingCard models.CardInfo
+			if err := tx.Where("Prefix_Name = ?", cardKey).First(&existingCard).Error; err == nil {
+				// 卡密已存在，重新生成
+				i--
+				continue
+			}
+
+			// 创建卡密信息（使用实际价格）
+			cardInfo := models.CardInfo{
+				PrefixName:     cardKey,
+				Whom:           creator,
+				CardType:       cardTypeName,
+				FYI:            cardTypeInfo.FYI,
+				State:          "启用",
+				Bind:           cardTypeInfo.Bind,
+				OpenNum:        cardTypeInfo.OpenNum,
+				Remarks:        remarks,
+				CreateData_:    currentTime,
+				Price:          actualPrice, // 使用经过利率计算的实际价格
+				ExpiredTime_:   int64(cardTypeInfo.Duration),
+				BindMachineNum: cardTypeInfo.BindMachineNum,
+				PCSign2:        cardKey, // 使用卡密作为PCSign2的唯一值，避免唯一约束冲突
+			}
+
+			cardInfos = append(cardInfos, cardInfo)
+			generatedCards = append(generatedCards, cardKey)
+		}
+
+		// 3. 批量插入卡密到数据库
+		if err := tx.CreateInBatches(cardInfos, 100).Error; err != nil {
+			return fmt.Errorf("保存卡密失败: %v", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return generatedCards, nil
+}
+
+// generateCardKey 生成卡密（按照PC端格式：前缀 + 32位十六进制）
+func (s *CardService) generateCardKey(prefix string) (string, error) {
+	// 生成32位十六进制字符串
+	hexStr, err := s.generateHexString(32)
+	if err != nil {
+		return "", err
+	}
+
+	// 组合：前缀 + 32位十六进制
+	cardKey := prefix + hexStr
+
+	return cardKey, nil
+}
+
+// generateHexString 生成指定长度的十六进制字符串
+func (s *CardService) generateHexString(length int) (string, error) {
+	// 直接生成指定长度的十六进制字符串
+	const hexChars = "0123456789ABCDEF"
+	result := make([]byte, length)
+
+	for i := 0; i < length; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(16))
+		if err != nil {
+			return "", err
+		}
+		result[i] = hexChars[num.Int64()]
+	}
+
+	return string(result), nil
 }

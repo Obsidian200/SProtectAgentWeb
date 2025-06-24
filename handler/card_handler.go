@@ -2,6 +2,7 @@ package handler
 
 import (
 	"SProtectAgentWeb/middleware"
+	"SProtectAgentWeb/models"
 	"SProtectAgentWeb/services"
 	"SProtectAgentWeb/util"
 	"log"
@@ -12,13 +13,15 @@ import (
 
 // CardHandler card处理器
 type CardHandler struct {
-	cardService *services.CardService
+	cardService     *services.CardService
+	cardTypeService *services.CardTypeService
 }
 
 // NewCardHandler 创建card处理器实例
-func NewCardHandler(cardService *services.CardService) *CardHandler {
+func NewCardHandler(cardService *services.CardService, cardTypeService *services.CardTypeService) *CardHandler {
 	return &CardHandler{
-		cardService: cardService,
+		cardService:     cardService,
+		cardTypeService: cardTypeService,
 	}
 }
 
@@ -259,5 +262,73 @@ func (h *CardHandler) EnableCardWithBanTimeReturn(c *gin.Context) {
 
 	util.Response(c, util.CodeSuccess, "卡密启用并归还封禁时间成功", gin.H{
 		"success": success,
+	})
+}
+
+// GenerateCards 生成卡密
+func (h *CardHandler) GenerateCards(c *gin.Context) {
+	// 解析请求参数
+	var req struct {
+		Software string `json:"software" binding:"required"`
+		CardType string `json:"card_type" binding:"required"`
+		Count    int    `json:"count" binding:"required,min=1,max=1000"`
+		Remarks  string `json:"remarks"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Response(c, util.CodeInvalidParam, "请求参数错误: "+err.Error(), nil)
+		return
+	}
+
+	// 获取用户会话信息
+	userSession := middleware.GetUserInfo(c)
+	if userSession == nil {
+		util.Response(c, http.StatusUnauthorized, "用户未登录", nil)
+		return
+	}
+
+	// 获取代理信息 - 从session中获取当前软件位的代理信息
+	agent, exists := userSession.SoftwareAgentInfo[req.Software]
+	if !exists {
+		util.Response(c, util.CodeInternalError, "当前软件位无代理信息", nil)
+		return
+	}
+
+	// 获取卡类型信息以计算成本
+	cardTypes, err := h.cardTypeService.GetCardTypeList(req.Software, agent.User)
+	if err != nil {
+		util.Response(c, util.CodeInternalError, "获取卡类型信息失败: "+err.Error(), nil)
+		return
+	}
+
+	// 找到对应的卡类型
+	var selectedCardType *models.CardType
+	for _, ct := range cardTypes {
+		if ct.Name == req.CardType {
+			selectedCardType = &ct
+			break
+		}
+	}
+
+	if selectedCardType == nil {
+		util.Response(c, util.CodeInternalError, "卡类型不存在或无权限", nil)
+		return
+	}
+
+	// 计算总成本
+	totalCost := selectedCardType.Price * float64(req.Count)
+
+	// 调用服务层生成卡密
+	cards, err := h.cardService.GenerateCards(req.Software, req.CardType, agent.User, req.Count, req.Remarks)
+	if err != nil {
+		util.Response(c, util.CodeInternalError, "生成卡密失败: "+err.Error(), nil)
+		return
+	}
+
+	util.Response(c, util.CodeSuccess, "卡密生成成功", gin.H{
+		"cards":      cards,
+		"count":      len(cards),
+		"total_cost": totalCost,
+		"unit_price": selectedCardType.Price,
 	})
 }

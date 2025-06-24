@@ -510,9 +510,68 @@
             layer.open({
               title: '生成卡密',
               type: 2,
-              area: admin.screen() < 2 ? ['100%', '100%'] : ['500px', '710px'],
+              shadeClose: true,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['500px', '650px'],
+              btn: ['生成', '复制', '取消'],
+              maxmin: true,
               content: 'AgentCardAddform.html',
-              maxmin: true
+              resize: true,
+              success: function (layero, index) {
+                // 可以传递一些数据给子页面（如果需要）
+                // window.currentCardData = {};
+              },
+              yes: function (index, layero) {
+                // 获取iframe窗口
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+
+                if (!iframeWin || !iframeWin.layui || !iframeWin.layui.form) {
+                  layer.msg('页面未加载完成，请稍后再试', { icon: 2 });
+                  return false;
+                }
+
+                // 触发iframe中的表单提交，子页面自己处理POST请求
+                iframeWin.layui.form.submit('LAY-user-front-submit');
+
+                return false; // 阻止默认关闭
+              },
+              // 第二个按钮：复制结果
+              btn2: function(index, layero) {
+                var body = layer.getChildFrame('body', index);
+                var cardResult = body.contents().find("#card-result").val();
+
+                if (!cardResult) {
+                  layer.msg('没有可复制的内容', {icon: 2});
+                  return false;
+                }
+
+                // 复制到剪贴板
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(cardResult).then(function() {
+                    layer.msg('复制成功', {icon: 1});
+                  }).catch(function() {
+                    layer.msg('复制失败', {icon: 2});
+                  });
+                } else {
+                  // 兼容旧浏览器
+                  var textarea = document.createElement('textarea');
+                  textarea.value = cardResult;
+                  document.body.appendChild(textarea);
+                  textarea.select();
+                  try {
+                    document.execCommand('copy');
+                    layer.msg('复制成功', {icon: 1});
+                  } catch (err) {
+                    layer.msg('复制失败', {icon: 2});
+                  }
+                  document.body.removeChild(textarea);
+                }
+
+                return false; // 不关闭弹窗
+              },
+              // 第三个按钮：取消（默认关闭弹窗）
+              cancel: function(index) {
+                layer.close(index);
+              }
             });
             break;
           case 'unbindCard':

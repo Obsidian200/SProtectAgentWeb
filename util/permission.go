@@ -18,6 +18,7 @@ const (
 	PermManageSubAgentCard      = 0x00000020 // 0010 0000 - 查看所有下级代理及其卡密
 	PermUnbindCard              = 0x00000040 // 0100 0000 - 解绑卡密
 	PermQueryCardByOther        = 0x00000080 // 1000 0000 - 允许被其他代理查询卡密
+	PermGenerateCard            = 0x00000100 // 0001 0000 0000 - 生成卡密权限
 )
 
 // 权限名称映射
@@ -31,6 +32,7 @@ var PermissionNames = map[uint64]string{
 	PermManageSubAgentCard:      "查看所有下级代理及其卡密",
 	PermUnbindCard:              "解绑卡密",
 	PermQueryCardByOther:        "允许被其他代理查询卡密",
+	PermGenerateCard:            "生成卡密",
 }
 
 // HasPermission 检查是否拥有指定权限
