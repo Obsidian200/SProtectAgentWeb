@@ -1,12 +1,8 @@
 # 🛡️ SProtectAgentWeb
 
-**SProtect网络验证系统 Web代理端**
-
-基于Go语言开发的SProtect网络验证系统Web代理管理平台，提供子代理管理、卡密管理、卡类型管理等核心功能。
-
 ---
 
-## 📖 项目简介
+## 📖 简介
 
 SProtectAgentWeb 是为 SProtect 网络验证系统开发的 Web 代理端，采用 Go + Layui 技术栈，提供简洁易用的代理管理界面。
 
