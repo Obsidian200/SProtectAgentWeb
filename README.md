@@ -1,9 +1,5 @@
 # 🛡️ SProtectAgentWeb
 
----
-
-## 📖 简介
-
 SProtectAgentWeb 是为 SProtect 网络验证系统开发的 Web 代理端，采用 Go + Layui 技术栈，提供简洁易用的代理管理界面。
 
 ## ✨ 主要功能
@@ -24,7 +20,7 @@ SProtectAgentWeb 是为 SProtect 网络验证系统开发的 Web 代理端，采
 - 卡类型配置
 - 价格和时长设置
 - 权限分配管理
-
+<!-- 
 ## 🚀 快速开始
 
 ### 安装运行
@@ -40,7 +36,7 @@ go build -o SProtectAgentWeb
 
 ### 配置文件
 
-编辑 `config/SProtectAgentWeb.ini`：
+编辑 `config/SProtectAgentWeb.ini`： -->
 
 
 ## 🛠️ 技术栈
