@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>子代理管理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+  <link href="../../res/adminui/dist/css/admin.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="layui-card layadmin-header">
+    <div class="layui-breadcrumb" lay-filter="breadcrumb">
+      <a lay-href="">主页</a>
+      <a><cite>代理管理</cite></a>
+      <a><cite>子代理管理</cite></a>
+    </div>
+  </div>
+
+  <div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+      <div class="layui-col-md12">
+        <div class="layui-card">
+          <div class="layui-card-header">子代理列表</div>
+          <div class="layui-card-body">
+            <div class="layui-form">
+              <div class="layui-form-item">
+                <div class="layui-inline">
+                  <select id="searchType" name="search_type" lay-filter="LAY-user-search-type">
+                    <option value="0">精准搜索</option>
+                    <option value="1">模糊搜索</option>
+                  </select>
+                </div>
+                <div class="layui-inline">
+                  <input type="text" id="keyword" name="keyword" placeholder="代理账号" autocomplete="off"
+                    class="layui-input">
+                </div>
+                <div class="layui-inline">
+                  <button class="layui-btn layuiadmin-btn-admin" lay-submit lay-filter="LAY-user-back-search">
+                    <i class="layui-icon layui-icon-search layuiadmin-button-btn"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <table class="layui-hide" id="test-table-index" lay-filter="test-table-index"></table>
+            <script type="text/html" id="toolbarDemo">
+              <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="addAgent">
+                  <i class="layui-icon layui-icon-add-1"></i>添加子代理
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="disableAgent">
+                  <i class="layui-icon layui-icon-disabled"></i>禁用选中
+                </button>
+                <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="enableAgent">
+                  <i class="layui-icon layui-icon-ok"></i>启用选中
+                </button>
+              </div>
+            </script>
+            <script type="text/html" id="tableRowBar">
+              <a class="layui-btn layui-btn-xs" lay-event="addMoney">
+                <i class="layui-icon layui-icon-rmb"></i>加款
+              </a>
+              <a class="layui-btn layui-bg-blue layui-btn-xs" lay-event="cardType">
+                <i class="layui-icon layui-icon-template-1"></i>卡类型
+              </a>
+              <a class="layui-btn layui-bg-orange layui-btn-xs" lay-event="permission">
+                <i class="layui-icon layui-icon-vercode"></i>权限
+              <a class="layui-btn layui-bg-red layui-btn-xs" lay-event="remark">
+                <i class="layui-icon layui-icon-edit"></i>备注
+              </a>
+
+              </a>
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'table', 'dropdown', 'form', 'software', 'utils'], function () {
+      var utils = layui.utils; // 使用自定义的 utils 模块
+      var table = layui.table;
+      var dropdown = layui.dropdown;
+      var admin = layui.admin;
+      var layer = layui.layer;
+      var form = layui.form;
+      var $ = layui.$;
+      var software = layui.software;
+
+      // 获取当前选择的软件
+      var currentSoftware = software.getCurrentSoftware();
+
+      // 创建表格渲染函数
+      function renderTable() {
+        // 获取筛选参数
+        var searchType = $('#searchType').val() || '0';
+        var keyword = $('#keyword').val() || '';
+
+        // 创建渲染实例
+        table.render({
+          elem: '#test-table-index'
+          , url: '/api/agent/getSubAgentList' // 子代理数据接口
+          , method: 'POST'
+          , contentType: 'application/json'
+          , request: {
+            pageName: 'page'
+            , limitName: 'limit'
+          }
+          , where: {
+            software: currentSoftware || '默认软件',
+            search_type: parseInt(searchType),
+            keyword: keyword
+          }
+          , parseData: function (res) { // res 即为原始返回的数据
+            console.log('API响应:', res);
+            return {
+              "code": res.code, // 解析接口状态
+              "msg": res.message, // 解析提示文本
+              "count": res.data.total, // 解析数据长度
+              "data": res.data.data // 解析数据列表
+            };
+          }
+          , toolbar: '#toolbarDemo'
+          , defaultToolbar: ['filter', 'exports', 'print']
+          , height: 'full-100' // 最大高度减去其他容器已占有的高度差
+          , totalRow: false // 开启合计行
+          , page: true
+          , limit: 20
+          , limits: [10, 20, 50, 100, 200]
+          , loading: true
+          , cellMinWidth: 80 // 设置单元格最小宽度
+          , cols: [[
+            { type: 'checkbox', fixed: 'left', width: 50 }
+            , { field: 'username', minWidth: 120, title: '账号', sort: true, align: 'center' }
+            , { field: 'password', minWidth: 120, title: '密码', align: 'center' }
+            , {
+              field: 'status', minWidth: 100, title: '状态', align: 'center',
+              templet: function (d) {
+                // 修正状态显示：stat=0表示启用，stat=1表示禁用
+                if (d.status === 0) {
+                  return '<span class="layui-badge layui-bg-green">启用</span>';
+                } else {
+                  return '<span class="layui-badge layui-bg-red">禁用</span>';
+                }
+              }
+            }
+            , {
+              field: 'balance', minWidth: 100, title: '余额', sort: true, align: 'center',
+              templet: function (d) {
+                // 格式化余额为2位小数
+                return d.balance.toFixed(2);
+              }
+            }
+            , { field: 'parities', minWidth: 100, title: '返利利率(%)', sort: true, align: 'center' }
+            , {
+              field: 'time_stock', minWidth: 100, title: '库存时长(小时)', sort: true, align: 'center',
+              templet: function (d) {
+                // 将秒转换为小时并保留2位小数
+                var hours = (d.time_stock / 3600).toFixed(2);
+                return hours + ' 小时';
+              }
+            }
+            , {
+              field: 'expiration', minWidth: 160, title: '到期时间', align: 'center',
+              templet: function (d) {
+                return utils.formatTimestamp(d.expiration);
+              }
+            }
+            , { field: 'remark', minWidth: 150, title: '备注', align: 'center' }
+            , { fixed: 'right', title: '操作', toolbar: '#tableRowBar', minWidth: 300, align: 'center' }
+          ]]
+          , done: function () {
+            console.log('子代理列表加载完成');
+          }
+          , error: function (res, msg) {
+            console.log(res, msg)
+          }
+        });
+      }
+
+      // 初始化表格
+      renderTable();
+
+      // 搜索按钮点击事件
+      form.on('submit(LAY-user-back-search)', function (data) {
+        renderTable();
+        return false; // 阻止表单跳转
+      });
+
+      // 搜索类型选择事件
+      form.on('select(LAY-user-search-type)', function (data) {
+        renderTable();
+      });
+
+      // 表格工具栏事件
+      table.on('toolbar(test-table-index)', function (obj) {
+        var checkStatus = table.checkStatus(obj.config.id);
+        var selectedData = checkStatus.data;
+
+        switch (obj.event) {
+          case 'addAgent':
+            // 添加子代理弹窗
+            layer.open({
+              title: '添加子代理',
+              type: 2,
+              shadeClose: true,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['460px', '520px'],
+              btn: ['确定', '取消'],
+              maxmin: true,
+              content: 'AgentAddForm.html',
+              resize: true,
+              yes: function (index, layero) {
+                // 获取iframe窗口
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+
+                if (!iframeWin || !iframeWin.layui || !iframeWin.layui.form) {
+                  layer.msg('页面未加载完成，请稍后再试', { icon: 2 });
+                  return false;
+                }
+
+                // 触发iframe中的表单提交
+                iframeWin.layui.form.submit('agent-add-form');
+
+                return false; // 阻止默认关闭
+              }
+            });
+            break;
+          case 'disableAgent':
+            // 禁用选中
+            if (selectedData.length === 0) {
+              return layer.msg('请选择要禁用的代理');
+            }
+            layer.confirm('确定要禁用所选的 ' + selectedData.length + ' 个代理吗？', function (index) {
+              layer.close(index);
+              var loadIndex = layer.load(2);
+
+              // 收集所有选中代理的用户名
+              var usernames = selectedData.map(function (item) {
+                return item.username;
+              });
+
+              // 批量禁用代理
+              $.ajax({
+                url: '/api/agent/disableAgent',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                  software: currentSoftware,
+                  username: usernames  // 使用数组
+                }),
+                success: function (res) {
+                  layer.close(loadIndex);
+                  if (res.code === 0) {
+                    layer.msg('操作完成：成功 ' + res.data.success_count + ' 个，失败 ' + res.data.failed_count + ' 个');
+                    renderTable();
+                  } else {
+                    layer.msg('操作失败：' + res.message);
+                  }
+                },
+                error: function () {
+                  layer.close(loadIndex);
+                  layer.msg('操作失败：网络错误');
+                }
+              });
+            });
+            break;
+          case 'enableAgent':
+            // 启用选中
+            if (selectedData.length === 0) {
+              return layer.msg('请选择要启用的代理');
+            }
+            layer.confirm('确定要启用所选的 ' + selectedData.length + ' 个代理吗？', function (index) {
+              layer.close(index);
+              var loadIndex = layer.load(2);
+
+              // 收集所有选中代理的用户名
+              var usernames = selectedData.map(function (item) {
+                return item.username;
+              });
+
+              // 批量启用代理
+              $.ajax({
+                url: '/api/agent/enableAgent',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                  software: currentSoftware,
+                  username: usernames  // 使用数组
+                }),
+                success: function (res) {
+                  layer.close(loadIndex);
+                  if (res.code === 0) {
+                    layer.msg('操作完成：成功 ' + res.data.success_count + ' 个，失败 ' + res.data.failed_count + ' 个');
+                    renderTable();
+                  } else {
+                    layer.msg('操作失败：' + res.message);
+                  }
+                },
+                error: function () {
+                  layer.close(loadIndex);
+                  layer.msg('操作失败：网络错误');
+                }
+              });
+            });
+            break;
+        }
+      });
+
+      // 表格行工具栏事件
+      table.on('tool(test-table-index)', function (obj) {
+        var data = obj.data;
+        var layEvent = obj.event;
+
+        switch (layEvent) {
+          case 'addMoney':
+            // 加款功能
+            layer.open({
+              title: '代理余额充值 - ' + data.username,
+              type: 2,
+              shadeClose: true,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['550px', '400px'],
+              btn: ['充值', '取消'],
+              maxmin: true,
+              content: 'AgentAddMoneyForm.html',
+              resize: true,
+              success: function (layero, index) {
+                // 将当前代理数据设置为全局变量，供子页面访问
+                window.currentAgentData = data;
+              },
+              yes: function (index, layero) {
+                // 获取iframe窗口
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+
+                if (!iframeWin || !iframeWin.layui || !iframeWin.layui.form) {
+                  layer.msg('页面未加载完成，请稍后再试', { icon: 2 });
+                  return false;
+                }
+
+                // 触发iframe中的表单提交
+                iframeWin.layui.form.submit('agent-addmoney-form');
+
+                return false; // 阻止默认关闭
+              }
+            });
+            break;
+          case 'remark':
+            // 备注功能
+            layer.prompt({
+              title: '修改备注 - ' + data.username,
+              formType: 0, // 单行文本框
+              value: data.remark || '', // 当前备注内容
+              area: ['400px', '200px'], // 弹窗大小
+              maxlength: 50, // 最大字符数
+              btn: ['确定', '取消']
+            }, function (value, index, elem) {
+              // 确定按钮回调
+              // 允许备注为空，用于清空备注
+              var remarkValue = value ? value.trim() : '';
+
+              // 发送修改备注请求
+              var loadIndex = layer.load(2);
+              $.ajax({
+                url: '/api/agent/updateAgentRemark',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                  software: currentSoftware,
+                  username: data.username,
+                  remark: remarkValue
+                }),
+                success: function (res) {
+                  layer.close(loadIndex);
+                  if (res.code === 0) {
+                    layer.msg('备注修改成功', { icon: 1 });
+                    layer.close(index); // 关闭弹窗
+                    renderTable(); // 刷新表格
+                  } else {
+                    layer.msg('备注修改失败: ' + (res.message || '未知错误'), { icon: 2 });
+                  }
+                },
+                error: function () {
+                  layer.close(loadIndex);
+                  layer.msg('备注修改失败: 网络错误', { icon: 2 });
+                }
+              });
+            });
+            break;
+          case 'cardType':
+            // 卡类型管理功能
+            layer.open({
+              title: '卡类型管理 - ' + data.username,
+              type: 2,
+              shadeClose: true,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['710px', '530px'],
+              btn: ['确定', '取消'],
+              maxmin: true,
+              content: 'AgentCardTypePermission.html',
+              resize: true,
+              success: function (layero, index) {
+                // 将当前代理数据设置为全局变量，供子页面访问
+                window.currentAgentData = data;
+              },
+              yes: function (index, layero) {
+                // 确定按钮：直接关闭弹窗
+                layer.close(index);
+                return false;
+              },
+              btn2: function (index, layero) {
+                // 取消按钮：直接关闭弹窗
+                layer.close(index);
+                return false;
+              }
+            });
+            break;
+          case 'permission':
+            // 权限管理功能
+            layer.open({
+              title: '权限管理 - ' + data.username,
+              type: 2,
+              shadeClose: true,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['600px', '500px'],
+              btn: ['保存', '取消'],
+              maxmin: true,
+              content: 'AgentPermission.html',
+              resize: true,
+              success: function (layero, index) {
+                // 将当前代理数据设置为全局变量，供子页面访问
+                window.currentAgentData = data;
+              },
+              yes: function (index, layero) {
+                // 获取iframe窗口
+                var iframeWin = window[layero.find('iframe')[0]['name']];
+
+                if (!iframeWin || !iframeWin.layui || !iframeWin.layui.form) {
+                  layer.msg('页面未加载完成，请稍后再试', { icon: 2 });
+                  return false;
+                }
+
+                // 触发iframe中的表单提交
+                iframeWin.layui.form.submit('agent-permission-form');
+
+                return false; // 阻止默认关闭
+              }
+            });
+            break;
+        }
+      });
+
+      // 提供给父窗口调用的刷新方法
+      window.refreshWithSoftware = function (software) {
+        currentSoftware = software;
+        renderTable();
+      };
+    });
+  </script>
+</body>
+
+</html>

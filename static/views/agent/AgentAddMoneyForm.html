@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>代理余额充值</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+</head>
+
+<body>
+  <form class="layui-form" lay-filter="agent-addmoney-form" id="agent-addmoney-form" style="margin:20px 10px">
+
+    <!-- 充值计算器 - 使用Layui inline布局 -->
+    <div class="layui-form-item">
+      <div class="layui-inline">
+        <label class="layui-form-label">充值计算器</label>
+        <div class="layui-input-inline" style="width: 80px;">
+          <input type="number" id="calc-deduct" placeholder="当前代理扣除余额" class="layui-input" min="0" step="0.01">
+        </div>
+
+        <div class="layui-form-mid">×</div>
+        <div class="layui-input-inline" style="width: 80px;">
+          <input type="text" id="calc-rate" readonly class="layui-input layui-disabled">
+        </div>
+        <div class="layui-form-mid">=</div>
+        <div class="layui-input-inline" style="width: 80px;">
+          <input type="number" id="calc-result" placeholder="下级代理增加余额" class="layui-input" min="0" step="0.01">
+        </div>
+        <button type="button" class="layui-btn" id="use-calc-btn">使用该值</button>
+      </div>
+    </div>
+
+    <!-- 充值时长和充值金额 - 同行布局 -->
+    <div class="layui-form-item">
+      <div class="layui-inline">
+        <label class="layui-form-label">充值时长</label>
+        <div class="layui-input-inline" style="width: 80px;">
+          <input type="number" name="time_hours" id="time-hours" placeholder="0" class="layui-input" min="0">
+        </div>
+        <div class="layui-form-mid">小时</div>
+      </div>
+      <div class="layui-inline">
+        <label class="layui-form-label">充值金额</label>
+        <div class="layui-input-inline" style="width: 80px;">
+          <input type="number" name="amount" id="charge-amount" placeholder="0.00" class="layui-input" min="0"
+            step="0.01">
+        </div>
+        <div class="layui-form-mid">元</div>
+      </div>
+    </div>
+
+    <!-- 说明文字 -->
+    <blockquote class="layui-elem-quote">
+      注*充值余额对应除"自定义时长"以外其他卡类型<br>
+      充值时长对应"自定义时长"卡<br>
+      库存时长不受利率影响，与当前代理等额转移<br>
+      充值余额会根据利率计算：当前代理消耗N，子代理获得N×利率
+    </blockquote>
+  </form>
+
+
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'form', 'software'], function () {
+      var $ = layui.$;
+      var form = layui.form;
+      var software = layui.software;
+      var layer = layui.layer;
+
+      // 获取当前软件位
+      var currentSoftware = software.getCurrentSoftware();
+
+      // 全局变量
+      var targetAgent = '';
+      var agentParities = 100; // 默认利率
+
+      // 直接从父页面获取当前操作的代理数据
+      function initFromParent() {
+        // 从父页面获取当前选中的代理数据
+        if (parent.window.currentAgentData) {
+          var agentData = parent.window.currentAgentData;
+          targetAgent = agentData.username;
+          agentParities = agentData.parities || 100;
+
+          // 设置利率显示
+          $('#calc-rate').val(agentParities + '%');
+
+          // 重置表单
+          $('#calc-deduct').val('');
+          $('#calc-result').val('');
+          $('#time-hours').val('');
+          $('#charge-amount').val('');
+        }
+      }
+
+      // 页面加载完成后初始化
+      $(document).ready(function() {
+        initFromParent();
+      });
+
+      // 计算器双向计算
+      var isCalculating = false; // 防止循环计算
+
+      // 正向计算：当前代理扣除余额 → 下级代理增加余额
+      $('#calc-deduct').on('input', function () {
+        if (isCalculating) return;
+        isCalculating = true;
+
+        var deductAmount = parseFloat($(this).val()) || 0;
+        var result = (deductAmount * agentParities / 100).toFixed(2);
+        $('#calc-result').val(result);
+
+        isCalculating = false;
+      });
+
+      // 反向计算：下级代理增加余额 → 当前代理扣除余额
+      $('#calc-result').on('input', function () {
+        if (isCalculating) return;
+        isCalculating = true;
+
+        var resultAmount = parseFloat($(this).val()) || 0;
+        var deduct = (resultAmount * 100 / agentParities).toFixed(2);
+        $('#calc-deduct').val(deduct);
+
+        isCalculating = false;
+      });
+
+      // 使用该值按钮
+      $('#use-calc-btn').on('click', function () {
+        var calcResult = $('#calc-result').val();
+        $('#charge-amount').val(calcResult);
+      });
+
+      // 监听表单提交
+      form.on('submit(agent-addmoney-form)', function (data) {
+        var field = data.field;
+
+        console.log('充值表单数据:', field);
+
+        // 验证
+        var amount = parseFloat(field.amount) || 0;
+        var timeHours = parseInt(field.time_hours) || 0;
+
+        if (amount <= 0 && timeHours <= 0) {
+          layer.msg('请输入充值金额或时长', { icon: 2 });
+          return false;
+        }
+
+        // 构建请求数据
+        var requestData = {
+          software: currentSoftware,
+          target_agent: targetAgent,
+          amount: amount,
+          time_hours: timeHours
+        };
+
+        console.log('发送的充值请求:', requestData);
+
+        // 发送请求
+        var loadIndex = layer.load(2);
+        $.ajax({
+          url: '/api/agent/addMoney',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(requestData),
+          success: function (res) {
+            layer.close(loadIndex);
+            if (res.code === 0) {
+              // 立即关闭弹窗并刷新父窗口表格
+              var index = parent.layer.getFrameIndex(window.name);
+              parent.layer.close(index);
+
+              // 刷新父窗口表格
+              if (parent.layui && parent.layui.table) {
+                parent.layui.table.reload('test-table-index');
+              }
+
+              // 在父窗口显示成功消息
+              parent.layer.msg('充值成功', { icon: 1 });
+            } else {
+              layer.msg('充值失败: ' + (res.message || '未知错误'), { icon: 2 });
+            }
+          },
+          error: function () {
+            layer.close(loadIndex);
+            layer.msg('充值失败: 网络错误', { icon: 2 });
+          }
+        });
+
+        return false; // 阻止表单默认提交
+      });
+    });
+  </script>
+</body>
+
+</html>

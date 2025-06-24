@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>添加子代理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+</head>
+
+<body>
+  <form class="layui-form" lay-filter="agent-add-form" id="agent-add-form"
+    style="padding: 20px 30px 0 0;">
+    <div class="layui-form-item">
+      <label class="layui-form-label">账号</label>
+      <div class="layui-input-block">
+        <input type="text" name="username" lay-verify="required" placeholder="请输入代理账号" autocomplete="off"
+          class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">密码</label>
+      <div class="layui-input-block">
+        <input type="password" name="password" lay-verify="required" placeholder="请输入代理密码" autocomplete="off"
+          class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">备注</label>
+      <div class="layui-input-block">
+        <input type="text" name="remark" placeholder="请输入备注（可选）" autocomplete="off"
+          class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">到期时间</label>
+      <div class="layui-input-block">
+        <input type="text" name="expiration" id="expiration" lay-verify="required" placeholder="请选择到期时间"
+          autocomplete="off" class="layui-input">
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-space1">
+      <div class="layui-col-xs10">
+        <label class="layui-form-label">账号余额</label>
+        <div class="layui-input-inline">
+          <input type="number" name="balance" lay-verify="required|number" placeholder="0.00" autocomplete="off"
+            class="layui-input" min="0" value="0" step="0.01">
+        </div>
+      </div>
+      <div class="layui-col-xs2">
+        <button type="button" class="layui-btn" id="explain-balance">说明</button>
+      </div>
+    </div>
+
+    <div class="layui-row layui-col-space1 layui-form-item">
+      <div class="layui-col-xs10">
+        <label class="layui-form-label">返利利率</label>
+        <div class="layui-input-group">
+          <input type="number" name="parities" lay-verify="required|number" placeholder="100" autocomplete="off"
+            class="layui-input" min="100" value="100">
+          <div class="layui-input-split layui-input-suffix">%</div>
+        </div>
+      </div>
+      <div class="layui-col-xs2">
+        <button type="button" class="layui-btn" id="explain-parities">说明</button>
+      </div>
+    </div>
+
+    <div class="layui-form-item layui-row layui-col-space1">
+      <div class="layui-col-xs10">
+        <label class="layui-form-label">库存时长</label>
+        <div class="layui-input-group">
+          <input type="number" name="time_stock" placeholder="0" autocomplete="off" class="layui-input" min="0"
+            value="0">
+          <div class="layui-input-split layui-input-suffix">小时</div>
+        </div>
+
+      </div>
+      <div class="layui-col-xs2">
+        <button type="button" class="layui-btn" id="explain-stock">说明</button>
+      </div>
+    </div>
+  </form>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'form', 'laydate', 'software'], function () {
+      var $ = layui.$;
+      var form = layui.form;
+      var laydate = layui.laydate;
+      var software = layui.software;
+      var admin = layui.admin;
+      var layer = layui.layer;
+
+      // 获取当前软件位
+      var currentSoftware = software.getCurrentSoftware();
+
+      // 初始化日期时间选择器
+      laydate.render({
+        elem: '#expiration',
+        type: 'datetime',
+        format: 'yyyy-MM-dd HH:mm:ss',
+        value: new Date(new Date().getTime() + 365 * 24 * 60 * 60 * 1000) // 默认一年后
+      });
+
+      // 说明按钮事件
+      $('#explain-balance').on('click', function () {
+        layer.alert('注*制卡余额对应除"自定义时长"以外其他卡类型<br/><br/>如果制卡类型勾选了除“自定义时长“以外其他类型，则必须分配余额给子代理，子代理生成除“自定义时长“以外的其他类型卡密时，将从该余额中扣除！<br/><br/>当前代理端扣除"制卡余额”数是的余额<br/>子代理增加”制卡余额"*"返利利率”数量的余额<br/>', {
+          title: '账号余额说明',
+          icon: 0
+        });
+      });
+
+      $('#explain-parities').on('click', function () {
+        layer.alert('请仔细阅读下面释义，子代理返利利率一经设定，将无法修改！！<br/>1.利率对应余额。默认为100%，且仅能设置不小于100的值。<br/>2.给子代理充值的“库存时长“和”自定义时长卡“消耗的时长与当前代理等额，不受利率影响。<br/>3.分配余额给子代理时，当前代理消耗余额N，子代理增加余额(N*利率)。<br/>4.子代理生成卡密所需扣除价格为原价*利率。<br/><br/>例：代理A跟作者买了5000余额的卡，此时开1张天卡消耗余额100。<br/>代理A发展了一个子代理B，并设定返利利率为120%。<br/>这时，代理A最多可以给子代理B充值5000*120%＝6000的余额。<br/>子代理B开1张天卡消耗100*120%＝120的余额。<br/><br/>', {
+          title: '返利利率说明',
+          icon: 0
+        });
+      });
+
+      $('#explain-stock').on('click', function () {
+        layer.alert('注*库存时长对应“自定义时长”卡<br/><br/>如果制卡类型勾选了“自定义时长”，则必须分配时长给子代理，子代理生成“自定义时长”卡密时，将从该时长中扣除！', {
+          title: '库存时长说明',
+          icon: 0
+        });
+      });
+
+      // 监听表单提交
+      form.on('submit(agent-add-form)', function (data) {
+        var field = data.field;
+
+        console.log('表单数据:', field);
+
+        // 构建请求数据
+        var requestData = {
+          software: currentSoftware,
+          username: field.username,
+          password: field.password,
+          balance: parseFloat(field.balance) || 0,
+          stock_duration: parseFloat(field.time_stock) * 3600 || 0, // 小时转为秒
+          expiry_time: Math.floor(new Date(field.expiration).getTime() / 1000), // 转为时间戳
+          parities: parseFloat(field.parities) || 100, // 返利利率
+          remarks: field.remark || ''
+        };
+
+        console.log('发送的请求数据:', requestData);
+
+        // 发送请求
+        var loadIndex = layer.load(2);
+        $.ajax({
+          url: '/api/agent/createSubAgent',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(requestData),
+          success: function (res) {
+            layer.close(loadIndex);
+            if (res.code === 0) {
+              layer.msg('添加子代理成功', { icon: 1 }, function () {
+                // 关闭弹窗并刷新父窗口表格
+                var index = parent.layer.getFrameIndex(window.name);
+                if (parent.layui && parent.layui.table) {
+                  parent.layui.table.reload('test-table-index');
+                }
+                parent.layer.close(index);
+              });
+            } else {
+              layer.msg('添加子代理失败: ' + (res.message || '未知错误'), { icon: 2 });
+            }
+          },
+          error: function () {
+            layer.close(loadIndex);
+            layer.msg('添加子代理失败: 网络错误', { icon: 2 });
+          }
+        });
+
+        return false; // 阻止表单默认提交
+      });
+    });
+  </script>
+</body>
+
+</html>

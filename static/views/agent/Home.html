@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>layuiAdmin 主页示例模板二</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../res/layui/css/layui.css" media="all">
+  <link rel="stylesheet" href="../../res/adminui/dist/css/admin.css" media="all">
+</head>
+
+<body>
+
+  <div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+      <div class="layui-col-sm6 layui-col-md3">
+        <div class="layui-card">
+          <div class="layui-card-header">
+            用户总数
+            <span class="layui-badge layui-bg-blue layuiadmin-badge">账号</span>
+          </div>
+          <div class="layui-card-body layuiadmin-card-list">
+            <p class="layuiadmin-big-font">0</p>
+            <p>
+              未过期用户
+              <span class="layuiadmin-span-color">0 个 <i class="layui-inline layui-icon layui-icon-user"></i></span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="layui-col-sm6 layui-col-md3">
+        <div class="layui-card">
+          <div class="layui-card-header">
+            今日活跃
+            <span class="layui-badge layui-bg-cyan layuiadmin-badge">账号</span>
+          </div>
+          <div class="layui-card-body layuiadmin-card-list">
+            <p class="layuiadmin-big-font">0</p>
+            <p>
+              当前在线
+              <span class="layuiadmin-span-color">0 个 <i class="layui-inline layui-icon layui-icon-user"></i></span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="layui-col-sm6 layui-col-md3">
+        <div class="layui-card">
+          <div class="layui-card-header">
+            子代总数
+            <span class="layui-badge layui-bg-green layuiadmin-badge">系统</span>
+          </div>
+          <div class="layui-card-body layuiadmin-card-list">
+
+            <p class="layuiadmin-big-font">0</p>
+            <p>
+              直接下级
+              <span class="layuiadmin-span-color">0 个 <i class="layui-inline layui-icon layui-icon-user"></i></span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="layui-col-sm6 layui-col-md3">
+        <div class="layui-card">
+          <div class="layui-card-header">
+            卡密总数
+            <span class="layui-badge layui-bg-orange layuiadmin-badge">卡密</span>
+          </div>
+          <div class="layui-card-body layuiadmin-card-list">
+
+            <p class="layuiadmin-big-font">0</p>
+            <p>
+              禁止卡密
+              <span class="layuiadmin-span-color">0 张 <i class="layui-inline layui-icon layui-icon-table"></i></span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="layui-col-sm8 layui-col-md8">
+        <div class="layui-card">
+          <div class="layui-card-header">
+            本月数据统计
+          </div>
+          <div class="layui-card-body">
+            <div class="layui-carousel layadmin-carousel layadmin-dataview" data-anim="fade"
+              lay-filter="LAY-index-pagetwo">
+              <div carousel-item id="LAY-index-pagetwo">
+                <div><i class="layui-icon layui-icon-loading1 layadmin-loading"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="layui-col-sm4 layui-col-md4">
+        <div class="layui-card">
+          <div class="layui-card-header">当前账号信息</div>
+          <div class="layui-card-body layui-text">
+            <table class="layui-table">
+              <colgroup>
+                <col width="150">
+                <col>
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td>当前服务器时间</td>
+                  <td>2025-06-11 04:02:18</td>
+                </tr>
+                <tr>
+                  <td>当前登录账号</td>
+                  <td>admin</td>
+                </tr>
+                <tr>
+                  <td>本次登陆时间</td>
+                  <td>2025-06-11 04:02:18</td>
+                </tr>
+                <tr>
+                  <td>本次登录的IP</td>
+                  <td>127.0.0.1 ( 内网IP PLYZ.NET)</td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="layui-card">
+          <div class="layui-card-header">
+            最新公告
+            <i class="layui-icon layui-icon-tips" lay-tips="要支持的噢" lay-offset="5"></i>
+          </div>
+          <div class="layui-card-body layui-text layadmin-text">
+            <blockquote class="layui-elem-quote">
+              <p>SProtect是一款以虚拟机代码加密为核心的加密系统，全新的虚拟机架构以及丰富可调的加密参数让您可以在各种代码效率环境下选择最优的代码加密方案，为您的软件产品保驾护航。</p>
+            </blockquote>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </div>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'sample']);
+  </script>
+</body>
+
+</html>

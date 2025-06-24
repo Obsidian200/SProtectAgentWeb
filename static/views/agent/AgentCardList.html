@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>卡密管理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+  <link href="../../res/adminui/dist/css/admin.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="layui-card layadmin-header">
+    <div class="layui-breadcrumb" lay-filter="breadcrumb">
+      <a lay-href="">主页</a>
+      <a><cite>代理管理</cite></a>
+      <a><cite>卡密管理</cite></a>
+    </div>
+  </div>
+
+  <div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+      <div class="layui-col-md12">
+        <div class="layui-card">
+          <div class="layui-card-header">卡密列表</div>
+          <div class="layui-card-body">
+            <div class="layui-form">
+              <div class="layui-form-item">
+                <div class="layui-inline">
+                  <select id="agentSelect" name="agent" lay-filter="LAY-user-agent-type" lay-search>
+                    <option value="0">当前代理</option>
+                    <option value="-1">全部下级代理</option>
+                    <!-- 子代理选项将通过JavaScript动态加载 -->
+                  </select>
+                </div>
+                <div class="layui-inline">
+                  <select id="statusSelect" name="status" lay-filter="LAY-user-klx-type">
+                    <option value="0">全部</option>
+                    <option value="1">启用</option>
+                    <option value="2">禁用</option>
+                  </select>
+                </div>
+                <div class="layui-inline">
+                  <select id="searchType" name="search_type" lay-filter="LAY-user-search-type">
+                    <option value="0">精准搜索</option>
+                    <option value="1">模糊搜索</option>
+                  </select>
+                </div>
+                <div class="layui-inline">
+                  <input type="text" id="keyword" name="keyword" placeholder="卡密(多个用逗号或空格分隔)" autocomplete="off" class="layui-input">
+                </div>
+                <div class="layui-inline">
+                  <button class="layui-btn layuiadmin-btn-admin" lay-submit lay-filter="LAY-user-back-search">
+                    <i class="layui-icon layui-icon-search layuiadmin-button-btn"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <table class="layui-hide" id="test-table-index" lay-filter="test-table-index"></table>
+            <script type="text/html" id="toolbarDemo">
+              <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="addCard">
+                  <i class="layui-icon layui-icon-add-1"></i>生成卡密
+                </button>
+                <div class="layui-btn layui-btn-sm layui-btn-warm" id="cardStatusBtn">
+                  <i class="layui-icon layui-icon-disabled"></i>禁用选中
+                  <i class="layui-icon layui-icon-down layui-font-12"></i>
+                </div>
+                
+                <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="unbindCard">
+                  <i class="layui-icon layui-icon-refresh-3"></i>解绑选中
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="deleteCard">
+                  <i class="layui-icon layui-icon-delete"></i>删除选中
+                </button>
+              </div>
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'table', 'dropdown', 'form', 'software', 'utils'], function () {
+      var utils = layui.utils; // 使用自定义的 utils 模块
+      var table = layui.table;
+      var dropdown = layui.dropdown;
+      var admin = layui.admin;
+      var layer = layui.layer;
+      var form = layui.form;
+      var $ = layui.$;
+      var software = layui.software;
+
+      // 测试 utils.formatTimestamp 是否可用
+      console.log('utils 模块:', utils);
+      console.log('formatTimestamp 函数测试:', utils.formatTimestamp(1609459200)); // 应该输出 "2021-01-01 00:00:00"
+
+      // 获取当前选择的软件
+      var currentSoftware = software.getCurrentSoftware();
+
+      // 加载子代理列表（预留功能）
+      function loadSubAgents() {
+        // 这里预留加载子代理的代码
+        // 实际实现时，可以通过AJAX请求获取子代理列表
+      }
+
+      // 创建表格渲染函数
+      function renderTable() {
+        // 获取筛选参数
+        var agent = $('#agentSelect').val() || '0';
+        var status = $('#statusSelect').val() || '0';
+        var searchType = $('#searchType').val() || '0';
+        var keyword = $('#keyword').val() || '';
+        
+        // 处理关键词，支持多个关键词（以逗号、空格或换行符分隔）
+        var keywords = [];
+        if (keyword) {
+          keywords = keyword.split(/[,\s\n]+/).filter(function(item) {
+            return item.trim() !== '';
+          });
+        }
+        
+        // 创建渲染实例
+        table.render({
+          elem: '#test-table-index'
+          , url: '/api/card/getCardList' // 卡密数据接口
+          , method: 'POST'
+          , contentType: 'application/json'
+          , request: {
+            pageName: 'page'
+            , limitName: 'limit'
+          }
+          , where: {
+            software: currentSoftware || '默认软件',
+            agent: agent,
+            status: status,
+            search_type: parseInt(searchType),
+            keywords: keywords
+          }
+          , parseData: function (res) { // res 即为原始返回的数据
+            console.log('API响应:', res);
+            return {
+              "code": res.code, // 解析接口状态
+              "msg": res.message, // 解析提示文本
+              "count": res.data.total, // 解析数据长度
+              "data": res.data.data // 解析数据列表
+            };
+          }
+          , toolbar: '#toolbarDemo'
+          , defaultToolbar: ['filter', 'exports', 'print']
+          , height: 'full-100' // 最大高度减去其他容器已占有的高度差
+          , totalRow: false // 开启合计行
+          , page: true
+          , limit: 20
+          , limits: [10, 20, 50, 100, 200]
+          , loading: true
+          , cols: [[
+            { type: 'checkbox', fixed: 'left' }
+            , { field: 'prefix_name', width: 320, title: '卡密' }
+            , { field: 'whom', width: 100, title: '制卡人' }
+            , {
+              field: 'create_data', width: 150, title: '创建时间', templet: function (d) {
+                return utils.formatTimestamp(d.create_data);
+              }
+            }
+            , { field: 'card_type', width: 110, title: '卡类型/时长' }
+            , { field: 'fyi', width: 80, title: '卡点数' }
+            , {
+              field: 'state', width: 60, title: '状态', templet: function (d) {
+                if (d.state === '启用') {
+                  return '<span class="layui-badge layui-bg-green">启用</span>';
+                } else if (d.state === '禁用') {
+                  return '<span class="layui-badge layui-bg-red">禁用</span>';
+                } else {
+                  return '<span class="layui-badge layui-bg-gray">' + d.state + '</span>';
+                }
+              }
+            }
+            , {
+              field: 'bind_machine', width: 150, title: '绑机(已记录/总个数)', templet: function (d) {
+                return d.now_bind_machine_num + '/' + d.bind_machine_num;
+              }
+            }
+            , {
+              field: 'bind_ip', width: 60, title: '绑IP', templet: function (d) {
+                return d.bind_ip > 0 ? '√' : '';
+              }
+            }
+            , {
+              field: 'login_count', width: 150, title: '登录次数(累计)', templet: function (d) {
+                return d.login_count || 0; // 假设没有登录次数字段
+              }
+            }
+            , { field: 'bind', width: 100, title: '限制绑定' }
+            , { field: 'open_num', width: 60, title: '多开' }
+            , { field: 'owner', width: 120, title: '充值账号' }
+            , {
+              field: 'unbind_count', width: 150, title: '换绑次数(累计)', templet: function (d) {
+                return d.unbind_count || 0; // 假设没有今日换绑次数字段
+              }
+            }
+            , {
+              field: 'unbind_deduct', width: 150, title: '换绑扣时(累计)', templet: function (d) {
+                var hours = Math.floor((d.unbind_deduct || 0) / 3600);
+                return hours + '小时';
+              }
+            }
+            , {
+              field: 'attr_unbind_limit_time', width: 100, title: '换绑周期', templet: function (d) {
+                var days = Math.floor((d.attr_unbind_limit_time || 0) / 86400);
+                return days + '天';
+              }
+            }
+            , { field: 'attr_unbind_free_count', width: 120, title: '免费换绑次数' }
+            , { field: 'attr_unbind_max_count', width: 120, title: '最多换绑次数' }
+            , {
+              field: 'attr_unbind_deduct_time', width: 120, title: '换绑扣除', templet: function (d) {
+                var hours = Math.floor((d.attr_unbind_deduct_time || 0) / 3600);
+                return hours + '小时';
+              }
+            }
+            , {
+              field: 'activate_time', width: 160, title: '激活时间', templet: function (d) {
+                return utils.formatTimestamp(d.activate_time);
+              }
+            }
+            , {
+              field: 'expired_time', width: 160, title: '到期时间', templet: function (d) {
+                if (d.activate_time > 0 && d.expired_time > 0) {
+                  return utils.formatTimestamp(d.activate_time + d.expired_time);
+                }
+                return '';
+              }
+            }
+            , {
+              field: 'last_login_time', width: 150, title: '最后登陆时间', templet: function (d) {
+                return utils.formatTimestamp(d.last_login_time);
+              }
+            }
+            , {
+              field: 'login_count', width: 150, title: '登陆次数(今日/累计)', templet: function (d) {
+                return '0/' + d.login_count; // 假设没有今日登录次数字段
+              }
+            }
+            , { field: 'ip', width: 120, title: 'IP地址' }
+            , { field: 'remarks', width: 120, title: '备注' }
+          ]]
+          , done: function () {
+            console.log('卡密列表加载完成');
+          }
+          , error: function (res, msg) {
+            console.log(res, msg)
+          }
+        });
+      }
+
+      // 初始化表格
+      renderTable();
+
+      // 预留加载子代理功能
+      loadSubAgents();
+
+      // 搜索按钮点击事件
+      form.on('submit(LAY-user-back-search)', function (data) {
+        renderTable();
+        return false; // 阻止表单跳转
+      });
+
+      // 代理选择事件
+      form.on('select(LAY-user-agent-type)', function (data) {
+        renderTable();
+      });
+
+      // 状态选择事件
+      form.on('select(LAY-user-klx-type)', function (data) {
+        renderTable();
+      });
+
+      // 搜索类型选择事件
+      form.on('select(LAY-user-search-type)', function (data) {
+        renderTable();
+      });
+
+      // 卡密状态下拉菜单
+      dropdown.render({
+        elem: '#cardStatusBtn',
+        data: [{
+          title: '禁用选中',
+          id: 'disableCard'
+        }, {
+          title: '启用选中',
+          id: 'enableCard'
+        }, {
+          title: '启用选中(归还封禁时间)',
+          id: 'enableCardWithBanTimeReturn'
+        }],
+        click: function (obj) {
+          var id = obj.id;
+          var checkStatus = table.checkStatus('test-table-index');
+          var selectedData = checkStatus.data;
+
+          if (selectedData.length === 0) {
+            return layer.msg('请选择要操作的卡密');
+          }
+
+          // 根据不同的操作执行不同的逻辑
+          switch (id) {
+            case 'disableCard':
+              // 禁用选中的卡密
+              layer.confirm('确定要禁用选中的 ' + selectedData.length + ' 个卡密吗？', function (index) {
+                // 批量处理
+                var successCount = 0;
+                var failCount = 0;
+                var totalCount = selectedData.length;
+                var processedCount = 0;
+
+                layer.close(index);
+                var loadIndex = layer.load(2);
+
+                // 逐个处理卡密
+                selectedData.forEach(function (item) {
+                  $.ajax({
+                    url: '/api/card/disableCard',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      software: currentSoftware,
+                      cardKey: item.prefix_name
+                    }),
+                    success: function (res) {
+                      processedCount++;
+                      if (res.code === 0) {
+                        successCount++;
+                      } else {
+                        failCount++;
+                      }
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+                        layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        renderTable();
+                      }
+                    },
+                    error: function () {
+                      processedCount++;
+                      failCount++;
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+                        layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        renderTable();
+                      }
+                    }
+                  });
+                });
+              });
+              break;
+
+            case 'enableCard':
+              // 启用选中的卡密
+              layer.confirm('确定要启用选中的 ' + selectedData.length + ' 个卡密吗？', function (index) {
+                // 批量处理
+                var successCount = 0;
+                var failCount = 0;
+                var totalCount = selectedData.length;
+                var processedCount = 0;
+
+                layer.close(index);
+                var loadIndex = layer.load(2);
+
+                // 逐个处理卡密
+                selectedData.forEach(function (item) {
+                  $.ajax({
+                    url: '/api/card/enableCard',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      software: currentSoftware,
+                      cardKey: item.prefix_name
+                    }),
+                    success: function (res) {
+                      processedCount++;
+                      if (res.code === 0) {
+                        successCount++;
+                      } else {
+                        failCount++;
+                      }
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+                        layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        renderTable();
+                      }
+                    },
+                    error: function () {
+                      processedCount++;
+                      failCount++;
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+                        layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        renderTable();
+                      }
+                    }
+                  });
+                });
+              });
+              break;
+
+            case 'enableCardWithBanTimeReturn':
+              // 启用选中的卡密并归还封禁时间
+              layer.confirm('确定要启用选中的 ' + selectedData.length + ' 个卡密并归还封禁时间吗？', function (index) {
+                // 批量处理
+                var successCount = 0;
+                var failCount = 0;
+                var totalCount = selectedData.length;
+                var processedCount = 0;
+                var returnTimeInfo = [];
+
+                layer.close(index);
+                var loadIndex = layer.load(2);
+
+                // 逐个处理卡密
+                selectedData.forEach(function (item) {
+                  $.ajax({
+                    url: '/api/card/enableCardWithBanTimeReturn',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      software: currentSoftware,
+                      cardKey: item.prefix_name
+                    }),
+                    success: function (res) {
+                      processedCount++;
+                      if (res.code === 0) {
+                        successCount++;
+                        if (res.data && res.data.returnTime) {
+                          returnTimeInfo.push({
+                            card: item.prefix_name,
+                            returnTime: res.data.returnTime
+                          });
+                        }
+                      } else {
+                        failCount++;
+                      }
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+
+                        // 显示归还时间信息
+                        if (returnTimeInfo.length > 0) {
+                          var returnTimeHtml = '<div style="padding: 10px;"><h3>归还封禁时间详情：</h3><ul>';
+                          returnTimeInfo.forEach(function (info) {
+                            returnTimeHtml += '<li>' + info.card + ': 归还 ' + info.returnTime + ' 秒</li>';
+                          });
+                          returnTimeHtml += '</ul></div>';
+
+                          layer.open({
+                            type: 1,
+                            title: '操作结果',
+                            content: returnTimeHtml,
+                            area: ['400px', '300px']
+                          });
+                        } else {
+                          layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        }
+
+                        renderTable();
+                      }
+                    },
+                    error: function () {
+                      processedCount++;
+                      failCount++;
+
+                      // 所有卡密处理完成后刷新表格
+                      if (processedCount === totalCount) {
+                        layer.close(loadIndex);
+                        layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                        renderTable();
+                      }
+                    }
+                  });
+                });
+              });
+              break;
+          }
+        }
+      });
+
+      // 表格工具栏事件
+      table.on('toolbar(test-table-index)', function (obj) {
+        var checkStatus = table.checkStatus(obj.config.id);
+        var selectedData = checkStatus.data;
+
+        switch (obj.event) {
+          case 'addCard':
+            // 生成卡密弹窗
+            layer.open({
+              title: '生成卡密',
+              type: 2,
+              area: admin.screen() < 2 ? ['100%', '100%'] : ['500px', '710px'],
+              content: 'AgentCardAddform.html',
+              maxmin: true
+            });
+            break;
+          case 'unbindCard':
+            // 解绑选中
+            if (selectedData.length === 0) {
+              return layer.msg('请选择要解绑的卡密');
+            }
+            layer.confirm('确定要解绑所选的 ' + selectedData.length + ' 个卡密吗？', function (index) {
+              // 批量处理
+              var successCount = 0;
+              var failCount = 0;
+              var totalCount = selectedData.length;
+              var processedCount = 0;
+
+              layer.close(index);
+              var loadIndex = layer.load(2);
+
+              // 逐个处理卡密
+              selectedData.forEach(function (item) {
+                $.ajax({
+                  url: '/api/card/unbindCard',
+                  type: 'POST',
+                  contentType: 'application/json',
+                  data: JSON.stringify({
+                    software: currentSoftware,
+                    cardKey: item.prefix_name
+                  }),
+                  success: function (res) {
+                    processedCount++;
+                    if (res.code === 0) {
+                      successCount++;
+                    } else {
+                      failCount++;
+                    }
+
+                    // 所有卡密处理完成后刷新表格
+                    if (processedCount === totalCount) {
+                      layer.close(loadIndex);
+                      layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                      renderTable();
+                    }
+                  },
+                  error: function () {
+                    processedCount++;
+                    failCount++;
+
+                    // 所有卡密处理完成后刷新表格
+                    if (processedCount === totalCount) {
+                      layer.close(loadIndex);
+                      layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                      renderTable();
+                    }
+                  }
+                });
+              });
+            });
+            break;
+          case 'deleteCard':
+            // 删除选中
+            if (selectedData.length === 0) {
+              return layer.msg('请选择要删除的卡密');
+            }
+            layer.confirm('确定要删除所选的 ' + selectedData.length + ' 个卡密吗？', function (index) {
+              // 批量处理
+              var successCount = 0;
+              var failCount = 0;
+              var totalCount = selectedData.length;
+              var processedCount = 0;
+
+              layer.close(index);
+              var loadIndex = layer.load(2);
+
+              // 逐个处理卡密
+              selectedData.forEach(function (item) {
+                $.ajax({
+                  url: '/api/card/deleteCard',
+                  type: 'POST',
+                  contentType: 'application/json',
+                  data: JSON.stringify({
+                    software: currentSoftware,
+                    cardKey: item.prefix_name
+                  }),
+                  success: function (res) {
+                    processedCount++;
+                    if (res.code === 0) {
+                      successCount++;
+                    } else {
+                      failCount++;
+                    }
+
+                    // 所有卡密处理完成后刷新表格
+                    if (processedCount === totalCount) {
+                      layer.close(loadIndex);
+                      layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                      renderTable();
+                    }
+                  },
+                  error: function () {
+                    processedCount++;
+                    failCount++;
+
+                    // 所有卡密处理完成后刷新表格
+                    if (processedCount === totalCount) {
+                      layer.close(loadIndex);
+                      layer.msg('操作完成：成功 ' + successCount + ' 个，失败 ' + failCount + ' 个');
+                      renderTable();
+                    }
+                  }
+                });
+              });
+            });
+            break;
+        }
+      });
+
+      // 提供给父窗口调用的刷新方法
+      window.refreshWithSoftware = function (software) {
+        currentSoftware = software;
+        renderTable();
+        // 重新加载子代理列表
+        loadSubAgents();
+      };
+    });
+  </script>
+</body>
+
+</html>

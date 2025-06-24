@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>代理卡类型权限设置</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+</head>
+
+<body>
+  <div class="layui-card-body">
+    <div id="cardtype-transfer"></div>
+  </div>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/'
+    }).use(['index', 'transfer', 'software'], function () {
+      var $ = layui.$;
+      var transfer = layui.transfer;
+      var software = layui.software;
+      var layer = layui.layer;
+
+      var currentSoftware = software.getCurrentSoftware();
+      var targetAgent = parent.window.currentAgentData ? parent.window.currentAgentData.username : '';
+
+      // 加载数据并初始化穿梭框
+      if (targetAgent) {
+        $.ajax({
+          type: 'POST',
+          url: '/api/agent/getAgentCardType',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            software: currentSoftware,
+            target_agent: targetAgent
+          }),
+          success: function (res) {
+            if (res.code === 0) {
+              // 处理后端数据，分离所有项和已选中项
+              var allData = [];
+              var selectedValues = [];
+
+              res.data.forEach(function(item) {
+                allData.push({
+                  value: item.value,
+                  title: item.title
+                  // 移除disabled字段，因为所有项都应该可操作
+                });
+
+                if (item.checked) {
+                  selectedValues.push(item.value);
+                }
+              });
+
+              // 渲染穿梭框
+              transfer.render({
+                elem: '#cardtype-transfer',
+                title: ['未授权卡类型', '已授权卡类型'],
+                data: allData,        // 所有可选项
+                value: selectedValues, // 已选中项（右侧）
+                showSearch: true,
+                id: 'cardtype-transfer-id',
+                width: 300,
+                height: 400,
+                onchange: function(obj, index) {
+                  // 实时保存权限变更
+                  var authorizedCardTypes = transfer.getData('cardtype-transfer-id');
+                  var cardTypeNames = $.map(authorizedCardTypes, function(d) {
+                    return d.value;
+                  });
+
+                  console.log('穿梭框变更:', obj);
+                  console.log('右侧数据(已授权):', authorizedCardTypes);
+                  console.log('发送的卡类型名称:', cardTypeNames);
+
+                  $.ajax({
+                    type: 'POST',
+                    url: '/api/agent/setAgentCardType',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                      software: currentSoftware,
+                      target_agent: targetAgent,
+                      card_type_names: cardTypeNames
+                    }),
+                    success: function (res) {
+                      layer.msg(res.message || '权限更新成功', { icon: res.code === 0 ? 1 : 2, time: 1000 });
+                    }
+                  });
+                }
+              });
+            } else {
+              layer.msg('加载数据失败: ' + res.message, { icon: 2 });
+            }
+          },
+          error: function() {
+            layer.msg('加载数据失败: 网络错误', { icon: 2 });
+          }
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

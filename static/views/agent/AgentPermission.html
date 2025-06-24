@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>代理权限管理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+</head>
+
+<body>
+  <form class="layui-form" lay-filter="agent-permission-form" id="agent-permission-form"
+    style="padding: 20px 30px 0 0;">
+    
+    <!-- 代理信息显示 -->
+    <div class="layui-form-item">
+      <label class="layui-form-label">代理账号</label>
+      <div class="layui-input-block">
+        <input type="text" id="agent-username" readonly class="layui-input layui-disabled">
+      </div>
+    </div>
+
+    <!-- 权限设置 -->
+    <fieldset class="layui-elem-field">
+      <legend>权限设置</legend>
+      <div class="layui-field-box">
+        <div class="layui-form-item">
+          <input type="checkbox" name="permissions" value="1" title="管理代理" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="2" title="生成卡密" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="4" title="查看卡密" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="8" title="删除卡密" lay-skin="primary">
+        </div>
+        <div class="layui-form-item">
+          <input type="checkbox" name="permissions" value="16" title="修改卡密" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="32" title="导出卡密" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="64" title="查看统计" lay-skin="primary">
+          <input type="checkbox" name="permissions" value="128" title="系统设置" lay-skin="primary">
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- 说明文字 -->
+    <div class="layui-form-item layui-form-text">
+      <div class="layui-input-block">
+        <blockquote class="layui-elem-quote">
+          权限说明：<br>
+          • 管理代理：可以创建、编辑、删除下级代理<br>
+          • 生成卡密：可以生成各种类型的卡密<br>
+          • 查看卡密：可以查看卡密列表和详情<br>
+          • 删除卡密：可以删除已生成的卡密<br>
+          • 修改卡密：可以修改卡密信息<br>
+          • 导出卡密：可以导出卡密数据<br>
+          • 查看统计：可以查看各种统计报表<br>
+          • 系统设置：可以修改系统配置
+        </blockquote>
+      </div>
+    </div>
+  </form>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'form', 'software'], function () {
+      var $ = layui.$;
+      var form = layui.form;
+      var software = layui.software;
+      var layer = layui.layer;
+
+      // 获取当前软件位
+      var currentSoftware = software.getCurrentSoftware();
+      
+      // 全局变量
+      var targetAgent = '';
+      var currentAuthority = 0;
+
+      // 直接从父页面获取当前操作的代理数据
+      function initFromParent() {
+        if (parent.window.currentAgentData) {
+          var agentData = parent.window.currentAgentData;
+          targetAgent = agentData.username;
+          currentAuthority = parseInt(agentData.authority) || 0;
+
+          // 设置代理账号
+          $('#agent-username').val(agentData.username);
+
+          // 设置权限复选框
+          setPermissionCheckboxes(currentAuthority);
+        }
+      }
+
+      // 设置权限复选框状态
+      function setPermissionCheckboxes(authority) {
+        $('input[name="permissions"]').each(function() {
+          var value = parseInt($(this).val());
+          if (authority & value) {
+            $(this).prop('checked', true);
+          }
+        });
+        form.render('checkbox'); // 重新渲染复选框
+      }
+
+      // 获取选中的权限值
+      function getSelectedPermissions() {
+        var authority = 0;
+        $('input[name="permissions"]:checked').each(function() {
+          authority += parseInt($(this).val());
+        });
+        return authority;
+      }
+
+      // 页面加载完成后初始化
+      $(document).ready(function() {
+        initFromParent();
+      });
+
+      // 监听表单提交
+      form.on('submit(agent-permission-form)', function (data) {
+        console.log('权限表单数据:', data.field);
+
+        // 获取选中的权限
+        var newAuthority = getSelectedPermissions();
+
+        // 构建请求数据
+        var requestData = {
+          software: currentSoftware,
+          target_agent: targetAgent,
+          authority: newAuthority
+        };
+
+        console.log('发送的权限请求:', requestData);
+
+        // 发送请求
+        var loadIndex = layer.load(2);
+        $.ajax({
+          url: '/api/agent/updatePermission',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(requestData),
+          success: function (res) {
+            layer.close(loadIndex);
+            if (res.code === 0) {
+              // 立即关闭弹窗并刷新父窗口表格
+              var index = parent.layer.getFrameIndex(window.name);
+              parent.layer.close(index);
+              
+              // 刷新父窗口表格
+              if (parent.layui && parent.layui.table) {
+                parent.layui.table.reload('test-table-index');
+              }
+              
+              // 在父窗口显示成功消息
+              parent.layer.msg('权限更新成功', { icon: 1 });
+            } else {
+              layer.msg('权限更新失败: ' + (res.message || '未知错误'), { icon: 2 });
+            }
+          },
+          error: function () {
+            layer.close(loadIndex);
+            layer.msg('权限更新失败: 网络错误', { icon: 2 });
+          }
+        });
+
+        return false; // 阻止表单默认提交
+      });
+    });
+  </script>
+</body>
+
+</html>

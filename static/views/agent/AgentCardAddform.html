@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>充值卡生成</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="layui-form" lay-filter="layuiadmin-form-role" id="layuiadmin-form-role" style="padding: 20px 30px 0 0;">
+    <div class="layui-form-item">
+      <label class="layui-form-label">选择卡种</label>
+      <div class="layui-input-block">
+        <select id="k_kz" name="k_kz" lay-filter="LAY-user-k_kz-type" lay-search></select>
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">选择软件</label>
+      <div class="layui-input-block">
+        <select id="k_ssrj" name="k_ssrj" lay-search>
+          <option value="">需要选择软件</option>
+        </select>
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">生成数量</label>
+      <div class="layui-input-block">
+        <input type="text" name="k_zksl" lay-verify="number" placeholder="必填" autocomplete="off" class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">卡密备注</label>
+      <div class="layui-input-block">
+        <input type="text" name="k_bzxx" placeholder="选填" autocomplete="off" class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">卡密内容</label>
+      <div class="layui-input-block">
+        <textarea type="text" id="k_data" name="k_data" autocomplete="off" class="layui-textarea" style="height:300px;"></textarea>
+      </div>
+    </div>
+    <div class="layui-form-item layui-hide">
+      <button class="layui-btn" lay-submit lay-filter="LAY-user-front-submit" id="LAY-user-back-submit">提交</button>
+    </div>
+  </div>
+  
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+  layui.config({
+    base: '../../res/' //静态资源所在路径
+  }).use(['index', 'form'], function(){
+    var $ = layui.$
+    ,form = layui.form ;
+    
+    $.ajax({
+        type:'GET',
+        url:'ManSoftType_sbm_Data.aspx',
+        dataType: 'json',
+        cache: false,
+        async: false,
+        success: function (data) {
+            $.each(data,function(index,item){
+                $('#k_ssrj').append(new Option(item.r_mc,item.r_sbm));
+                })
+                form.render();
+            }
+	});
+    
+    $.ajax({
+        type:'GET',
+        url:'ManCardType_ky_Data.aspx',
+        dataType: 'json',
+        cache: false,
+        success: function (data) {
+            $.each(data,function(index,item){
+                $('#k_kz').append(new Option(item.a_klmc,item.a_id));
+                })
+            form.render();
+            $.ajax({
+            type:'GET',
+            url:'ManCardType_kzidTosbm_Data.aspx?id=' + $('#k_kz').val(),
+            dataType: 'json',
+            cache: false,
+            success: function (data) {
+                if(data.code==4){
+                   $('#k_ssrj').val('');
+                   $('#k_ssrj').attr("disabled",false);
+                }else{
+                   $('#k_ssrj').val(data.msg);
+                   $('#k_ssrj').attr("disabled",true);
+                }
+                form.render();
+                }
+            });
+            }
+	});
+    
+    //监听选择软件
+    form.on('select(LAY-user-k_kz-type)', function(data){
+        $.ajax({
+            type:'GET',
+            url:'ManCardType_kzidTosbm_Data.aspx?id=' + data.value,
+            dataType: 'json',
+            cache: false,
+            success: function (data) {
+                if(data.code==4){
+                   $('#k_ssrj').val('');
+                   $('#k_ssrj').attr("disabled",false);
+                }else{
+                   $('#k_ssrj').val(data.msg);
+                   $('#k_ssrj').attr("disabled",true);
+                }
+                form.render();
+                }
+        });
+    });
+   
+  });
+  </script>
+</body>
+</html>

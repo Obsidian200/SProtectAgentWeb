@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SProtect网页代理端</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../res/layui/css/layui.css" rel="stylesheet">
+  <link href="../res/adminui/dist/css/admin.css" rel="stylesheet">
+
+</head>
+<body class="layui-layout-body" id="LAY_home_iframe">
+  <div id="LAY_app" style="visibility: hidden">
+    <div class="layui-layout layui-layout-admin">
+      <div class="layui-header">
+        <!-- 头部区域 -->
+        <ul class="layui-nav layui-layout-left">
+          <li class="layui-nav-item layadmin-flexible" lay-unselect>
+            <a href="javascript:;" layadmin-event="flexible" title="侧边伸缩">
+              <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
+            </a>
+          </li>
+          <li class="layui-nav-item" lay-unselect>
+            <div class="layui-inline" style="width: 180px;">
+              <div class="layui-form" style="margin-bottom: 0;">
+                <select id="software-selector" name="software" lay-filter="software-filter" lay-search>
+                  <option value="">选择软件位...</option>
+                  <!-- 软件位选项将通过JavaScript动态加载 -->
+                </select>
+              </div>
+            </div>
+          </li>
+          <li class="layui-nav-item" lay-unselect>
+            <a href="javascript:;" layadmin-event="refresh" title="刷新">
+              <i class="layui-icon layui-icon-refresh-3"></i>
+            </a>
+          </li>
+        </ul>
+        <ul class="layui-nav layui-layout-right" lay-filter="layadmin-layout-right">
+          <li class="layui-nav-item layui-hide-xs" lay-unselect>
+            <a href="javascript:;" layadmin-event="theme">
+              <i class="layui-icon layui-icon-theme"></i>
+            </a>
+          </li>
+          <li class="layui-nav-item layui-hide-xs" lay-unselect>
+            <a href="javascript:;" layadmin-event="fullscreen">
+              <i class="layui-icon layui-icon-screen-full"></i>
+            </a>
+          </li>
+          <li class="layui-nav-item" lay-unselect>
+            <a href="javascript:;">
+              <cite>admin</cite>
+            </a>
+            <dl class="layui-nav-child">
+              <!-- <dd><a lay-href="set/user/info.html">基本资料</a></dd>
+              <dd><a lay-href="set/user/password.html">修改密码</a></dd>
+              <hr> -->
+              <dd layadmin-event="logout" style="text-align: center;"><a>退出</a></dd>
+            </dl>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 侧边菜单 -->
+      <div class="layui-side layui-side-menu">
+        <div class="layui-side-scroll">
+          <div class="layui-logo" lay-href="home/console.html">
+            <span>SProtect网页代理端</span>
+          </div>
+          <ul class="layui-nav layui-nav-tree" lay-accordion id="LAY-system-side-menu" lay-filter="layadmin-system-side-menu">
+            <li data-name="home" class="layui-nav-item layui-this">
+              <a href="javascript:;" lay-href="./agent/Home.html" lay-tips="主页" lay-direction="2">
+                <i class="layui-icon layui-icon-home"></i>
+                <cite>主页</cite>
+              </a>
+            </li>
+            <li data-name="home" class="layui-nav-item">
+              <a lay-href="./agent/AgentSubList.html" lay-tips="子级代理" lay-direction="2">
+                <i class="layui-icon layui-icon-group"></i>
+                <cite>子级代理</cite>
+              </a>
+            </li>
+            <!-- <li data-name="home" class="layui-nav-item">
+              <a lay-href="senior/im/index.html" lay-tips="用户列表" lay-direction="2">
+                <i class="layui-icon layui-icon-user"></i>
+                <cite>用户列表</cite>
+              </a>
+            </li> -->
+            <li data-name="home" class="layui-nav-item">
+              <a lay-href="./agent/AgentCardTypeList.html" lay-tips="卡密类型" lay-direction="2">
+                <i class="layui-icon layui-icon-template"></i>
+                <cite>卡密类型</cite>
+              </a>
+            </li>
+            <li data-name="home" class="layui-nav-item">
+              <a lay-href="./agent/AgentCardList.html" lay-tips="卡密列表" lay-direction="2">
+                <i class="layui-icon layui-icon-table"></i>
+                <cite>卡密列表</cite>
+              </a>
+            </li>
+          </ul>
+
+
+        </div>
+      </div>
+
+      <!-- 页面标签 -->
+      <div class="layadmin-pagetabs" id="LAY_app_tabs">
+        <div class="layui-icon layadmin-tabs-control layui-icon-prev" layadmin-event="leftPage"></div>
+        <div class="layui-icon layadmin-tabs-control layui-icon-next" layadmin-event="rightPage"></div>
+        <div class="layui-icon layadmin-tabs-control layui-icon-down">
+          <ul class="layui-nav layadmin-tabs-select" lay-filter="layadmin-pagetabs-nav">
+            <li class="layui-nav-item" lay-unselect>
+              <a href="javascript:;"></a>
+              <dl class="layui-nav-child layui-anim-fadein">
+                <dd layadmin-event="closeThisTabs"><a href="javascript:;">关闭当前标签页</a></dd>
+                <dd layadmin-event="closeOtherTabs"><a href="javascript:;">关闭其它标签页</a></dd>
+                <dd layadmin-event="closeRightTabs"><a href="javascript:;">关闭右侧标签页</a></dd>
+                <dd layadmin-event="closeAllTabs"><a href="javascript:;">关闭全部标签页</a></dd>
+              </dl>
+            </li>
+          </ul>
+        </div>
+        <div class="layui-tab" lay-unauto lay-allowClose="true" lay-filter="layadmin-layout-tabs">
+          <ul class="layui-tab-title" id="LAY_app_tabsheader">
+            <li lay-id="./agent/Home.html" lay-attr="./agent/Home.html" class="layui-this"><i class="layui-icon layui-icon-home"></i></li>
+          </ul>
+        </div>
+      </div>
+
+
+      <!-- 主体内容 -->
+      <div class="layui-body" id="LAY_app_body">
+        <div class="layadmin-tabsbody-item layui-show">
+          <iframe src="./agent/Home.html" frameborder="0" class="layadmin-iframe"></iframe>
+        </div>
+      </div>
+
+      <!-- 辅助元素，一般用于移动设备下遮罩 -->
+      <div class="layadmin-body-shade" layadmin-event="shade"></div>
+    </div>
+  </div>
+
+  <script src="../res/layui/layui.js"></script>
+  <script>
+  layui.config({
+    base: '../res/' // 静态资源所在路径
+  }).use(['index', 'form'], function(){
+    var $ = layui.$;
+    var form = layui.form;
+    
+    // 检查登录状态
+    function checkLoginStatus() {
+      // 直接发送请求验证Session是否有效并获取用户信息
+      $.ajax({
+        url: '/api/auth/getUserInfo',
+        type: 'POST',
+        contentType: 'application/json',
+        success: function(res){
+          if(res.code === 200){
+            // Session有效，将用户信息存储到localStorage供页面使用
+            localStorage.setItem('user_info', JSON.stringify({
+              username: res.data.username,
+              software_list: res.data.software_list,
+              software_agent_info: res.data.software_agent_info
+            }));
+            
+            // 更新用户显示信息
+            updateUserDisplay(res.data);
+            
+            // 加载软件位选择器
+            loadSoftwareSelector(res.data.software_list);
+          } else {
+            // Session无效，跳转到登录页
+            location.href = './login.html';
+          }
+        },
+        error: function(){
+          // 请求失败，可能是网络问题或Session已失效
+          location.href = './login.html';
+        }
+      });
+    }
+    
+    // 更新用户显示信息
+    function updateUserDisplay(userData) {
+      if(userData && userData.username) {
+        // 更新header中的用户名显示
+        $('ul.layui-layout-right cite').text(userData.username);
+      }
+    }
+    
+    // 加载软件位选择器
+    function loadSoftwareSelector(softwareList) {
+      var selector = $('#software-selector');
+      selector.empty();
+
+      if(softwareList && softwareList.length > 0) {
+        // 获取当前选中的软件位
+        var currentSoftware = localStorage.getItem('current_software') || '';
+
+        // 添加软件位选项（softwareList现在是字符串数组）
+        softwareList.forEach(function(software) {
+          var selected = software === currentSoftware ? 'selected' : '';
+          selector.append('<option value="' + software + '" ' + selected + '>' + software + '</option>');
+        });
+
+        // 如果没有选中的软件位且有软件位列表，默认选中第一个
+        if(!currentSoftware && softwareList.length > 0) {
+          localStorage.setItem('current_software', softwareList[0]);
+          // 设置第一个选项为选中状态
+          selector.val(softwareList[0]);
+        }
+      }
+
+      // 重新渲染表单
+      form.render('select');
+    }
+    
+    // 监听软件位选择事件
+    form.on('select(software-filter)', function(data){
+      var softwareName = data.value;
+      if(softwareName) {
+        // 保存当前选择的软件位
+        localStorage.setItem('current_software', softwareName);
+        
+        // 刷新当前页面或通知子页面软件位已更改
+        var currentIframe = $('.layadmin-tabsbody-item.layui-show iframe')[0];
+        if(currentIframe) {
+          try {
+            // 尝试调用iframe中的方法
+            if(currentIframe.contentWindow.refreshWithSoftware) {
+              currentIframe.contentWindow.refreshWithSoftware(softwareName);
+            } else {
+              // 如果没有专门的刷新方法，则重新加载iframe
+              currentIframe.contentWindow.location.reload();
+            }
+          } catch(e) {
+            console.error('刷新页面失败:', e);
+          }
+        }
+      }
+    });
+    
+    // 提供给子页面获取当前软件位的方法
+    window.getCurrentSoftware = function() {
+      return localStorage.getItem('current_software') || '';
+    };
+    
+    // 页面加载时检查登录状态
+    checkLoginStatus();
+  });
+
+  </script>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>卡密类型管理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="../../res/layui/css/layui.css" rel="stylesheet">
+  <link href="../../res/adminui/dist/css/admin.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="layui-card layadmin-header">
+    <div class="layui-breadcrumb" lay-filter="breadcrumb">
+      <a lay-href="">主页</a>
+      <a><cite>代理管理</cite></a>
+      <a><cite>卡密类型</cite></a>
+    </div>
+  </div>
+
+  <div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+      <div class="layui-col-md12">
+        <div class="layui-card">
+          <div class="layui-card-header">卡密类型列表</div>
+          <div class="layui-card-body">
+            <table class="layui-hide" id="test-table-index" lay-filter="test-table-index"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../res/layui/layui.js"></script>
+  <script>
+    layui.config({
+      base: '../../res/' // 静态资源所在路径
+    }).use(['index', 'table', 'dropdown', 'software'], function () {
+      var table = layui.table;
+      var dropdown = layui.dropdown;
+      var software = layui.software;
+
+      // 获取当前选择的软件
+      var currentSoftware = software.getCurrentSoftware();
+
+      // 创建渲染实例
+      table.render({
+        elem: '#test-table-index'
+        , url: '/api/cardtype/getCardTypeList' // 卡密类型数据接口
+        , method: 'POST'
+        , contentType: 'application/json'
+        , where: {
+          software: currentSoftware || '默认软件'
+        }
+        , parseData: function (res) { // res 即为原始返回的数据
+          console.log('API响应:', res);
+          return {
+            "code": res.code, // 解析接口状态
+            "msg": res.message, // 解析提示文本
+            "count": res.data.total, // 解析数据长度
+            "data": res.data.data // 解析数据列表
+          };
+        }
+        , height: 'full-100' // 最大高度减去其他容器已占有的高度差
+        , cellMinWidth: 80
+        , totalRow: false // 开启合计行
+        , page: false
+        , limit: 5
+        , limits: [5, 20, 50, 100, 200]
+        , loading: true
+        , cols: [[
+          { field: 'name', width: 120, title: '名称' }
+          , { field: 'prefix', width: 100, title: '前缀' }
+          , {
+            field: 'duration', width: 120, title: '时长',
+            templet: function(d) {
+              // 将秒转换为可读格式
+              if (d.duration === 0) return '永久';
+              var days = Math.floor(d.duration / 86400);
+              var hours = Math.floor((d.duration % 86400) / 3600);
+              if (days > 0) return days + '天';
+              if (hours > 0) return hours + '小时';
+              return d.duration + '秒';
+            }
+          }
+          , { field: 'fyi', width: 80, title: '点数' }
+          , {
+            field: 'price', width: 100, title: '价格',
+            templet: function(d) {
+              return d.price.toFixed(2) + '元';
+            }
+          }
+          , { field: 'open_num', width: 100, title: '多开数量' }
+          , { field: 'bind_machine_num', width: 120, title: '绑机(总个数)' }
+          , {
+            field: 'bind_ip', width: 100, title: '绑定IP',
+            templet: function(d) {
+              return d.bind_ip === 1 ? '<i class="layui-icon layui-icon-ok" style="color: green;"></i>' : '<i class="layui-icon layui-icon-close" style="color: red;"></i>';
+            }
+          }
+          , {
+            field: 'lock_bind_pcsign', width: 100, title: '本机解绑',
+            templet: function(d) {
+              return d.lock_bind_pcsign === 1 ? '<i class="layui-icon layui-icon-ok" style="color: green;"></i>' : '<i class="layui-icon layui-icon-close" style="color: red;"></i>';
+            }
+          }
+          , {
+            field: 'attr_unbind_limit_time', width: 120, title: '换绑周期',
+            templet: function(d) {
+              if (d.attr_unbind_limit_time === 0) return '不限制';
+              var days = Math.floor(d.attr_unbind_limit_time / 86400);
+              var hours = Math.floor((d.attr_unbind_limit_time % 86400) / 3600);
+
+              if (days > 0) {
+                return days + '天';
+              } else if (hours > 0) {
+                return hours + '小时';
+              } else {
+                return Math.floor(d.attr_unbind_limit_time / 60) + '分钟';
+              }
+            }
+          }
+          , { field: 'attr_unbind_free_count', width: 100, title: '免费换绑' }
+          , { field: 'attr_unbind_max_count', width: 100, title: '最多换绑' }
+          , {
+            field: 'attr_unbind_deduct_time', width: 120, title: '换绑扣除',
+            templet: function(d) {
+              if (d.attr_unbind_deduct_time === 0) return '不扣除';
+              var days = Math.floor(d.attr_unbind_deduct_time / 86400);
+              var hours = Math.floor((d.attr_unbind_deduct_time % 86400) / 3600);
+
+              if (days > 0) {
+                return days + '天';
+              } else if (hours > 0) {
+                return hours + '小时';
+              } else {
+                return Math.floor(d.attr_unbind_deduct_time / 60) + '分钟';
+              }
+            }
+          }
+          , { field: 'remarks', width: 150, title: '备注' }
+        ]]
+        , done: function () {
+          console.log('卡密类型列表加载完成');
+        }
+        , error: function (res, msg) {
+          console.log(res, msg)
+        }
+      });
+      
+      // 提供给父窗口调用的刷新方法
+      window.refreshWithSoftware = function(software) {
+        currentSoftware = software;
+        table.reload('test-table-index', {
+          where: {
+            software: software || '默认软件'
+          }
+        });
+      };
+    });
+  </script>
+</body>
+
+</html>
