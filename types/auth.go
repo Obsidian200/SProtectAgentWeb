@@ -1,6 +1,6 @@
 package types
 
-import "web-agent-backend/models"
+import "SProtectAgentWeb/models"
 
 // LoginRequest 登录请求
 

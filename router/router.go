@@ -1,13 +1,13 @@
 package router
 
 import (
+	"SProtectAgentWeb/config"
+	"SProtectAgentWeb/database"
+	"SProtectAgentWeb/handler"
+	"SProtectAgentWeb/middleware"
+	"SProtectAgentWeb/services"
+	"SProtectAgentWeb/util"
 	"net/http"
-	"web-agent-backend/config"
-	"web-agent-backend/database"
-	"web-agent-backend/handler"
-	"web-agent-backend/middleware"
-	"web-agent-backend/services"
-	"web-agent-backend/util"
 
 	"github.com/gin-gonic/gin"
 )

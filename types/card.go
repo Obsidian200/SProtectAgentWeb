@@ -1,7 +1,7 @@
 package types
 
 import (
-	"web-agent-backend/models"
+	"SProtectAgentWeb/models"
 )
 
 // CardQueryParams 卡密查询参数

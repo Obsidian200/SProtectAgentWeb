@@ -1,11 +1,11 @@
 package main
 
 import (
+	"SProtectAgentWeb/config"
+	"SProtectAgentWeb/database"
+	"SProtectAgentWeb/router"
 	"fmt"
 	"log"
-	"web-agent-backend/config"
-	"web-agent-backend/database"
-	"web-agent-backend/router"
 )
 
 func main() {

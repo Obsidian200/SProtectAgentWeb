@@ -1,12 +1,12 @@
 package services
 
 import (
+	"SProtectAgentWeb/database"
+	"SProtectAgentWeb/models"
+	"SProtectAgentWeb/types"
+	"SProtectAgentWeb/util"
 	"fmt"
 	"math"
-	"web-agent-backend/database"
-	"web-agent-backend/models"
-	"web-agent-backend/types"
-	"web-agent-backend/util"
 )
 
 // SoftwareService 软件位服务

@@ -1,13 +1,13 @@
 package handler
 
 import (
+	"SProtectAgentWeb/models"
+	"SProtectAgentWeb/services"
+	"SProtectAgentWeb/types"
+	"SProtectAgentWeb/util"
 	"fmt"
 	"log"
 	"net/http"
-	"web-agent-backend/models"
-	"web-agent-backend/services"
-	"web-agent-backend/types"
-	"web-agent-backend/util"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

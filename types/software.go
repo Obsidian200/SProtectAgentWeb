@@ -1,6 +1,6 @@
 package types
 
-import "web-agent-backend/models"
+import "SProtectAgentWeb/models"
 
 // GetSoftwaresResponse 获取软件位列表响应
 type GetSoftwaresResponse struct {

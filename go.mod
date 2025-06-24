@@ -1,4 +1,4 @@
-module web-agent-backend
+module SProtectAgentWeb
 
 go 1.21
 

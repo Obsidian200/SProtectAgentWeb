@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"SProtectAgentWeb/services"
+	"SProtectAgentWeb/types"
 	"net/http"
-	"web-agent-backend/services"
-	"web-agent-backend/types"
 
 	"github.com/gin-gonic/gin"
 )

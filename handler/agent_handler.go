@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"SProtectAgentWeb/middleware"
+	"SProtectAgentWeb/models"
+	"SProtectAgentWeb/services"
+	"SProtectAgentWeb/util"
 	"log"
 	"net/http"
-	"web-agent-backend/middleware"
-	"web-agent-backend/models"
-	"web-agent-backend/services"
-	"web-agent-backend/util"
 
 	"github.com/gin-gonic/gin"
 )

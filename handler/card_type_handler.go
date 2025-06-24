@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"web-agent-backend/middleware"
-	"web-agent-backend/services"
-	"web-agent-backend/util"
+	"SProtectAgentWeb/middleware"
+	"SProtectAgentWeb/services"
+	"SProtectAgentWeb/util"
 
 	"github.com/gin-gonic/gin"
 )
