@@ -39,7 +39,7 @@ go build -o SProtectAgentWeb
 编辑 `config/SProtectAgentWeb.ini`： -->
 
 
-## 🛠️ 技术栈
+## 技术栈
 
 - **后端**: Go + Gin + GORM + SQLite
 - **前端**: Layui
