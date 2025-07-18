@@ -2,6 +2,13 @@
 
 SProtectAgentWeb 是为 SProtect 网络验证系统开发的 Web 代理端，采用 Go + Layui 技术栈，提供简洁易用的代理管理界面。
 
+## 使用说明
+在[Realease](https://github.com/Obsidian200/SProtectAgentWeb/releases)页面下载最新版本的zip解压出来
+
+SProtectAgentWeb.exe和SProtectAgentWeb.ini放到服务端目录，运行即可
+
+SProtectAgentWeb.ini是配置文件，修改端口号和数据库路径，默认路径是当前目录
+
 ## 主要功能
 
 ### 子代理管理
