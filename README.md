@@ -1,6 +1,7 @@
 # SProtectAgentWeb
 
 SProtectAgentWeb 是为 SProtect 网络验证系统开发的 Web 代理端，采用 Go + Layui 技术栈，提供简洁易用的代理管理界面。
+SProtectAgentWeb不依赖SProtect云计算和服务端，程序独立运行，功能开发和逻辑设计都是通过在PC代理端反复操作和通过对数据库变动对比分析得出，可能存在逻辑遗漏以及功能和官方代理端效果不一致的问题，可向我反馈修复
 
 ## 使用说明
 在[Realease](https://github.com/Obsidian200/SProtectAgentWeb/releases)页面下载最新版本的zip解压出来
@@ -48,5 +49,5 @@ go build -o SProtectAgentWeb
 
 ## 技术栈
 
-- **后端**: Go + Gin + GORM + SQLite
+- **后端**: Golang
 - **前端**: Layui
